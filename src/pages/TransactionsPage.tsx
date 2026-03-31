@@ -1,12 +1,28 @@
 import { useApp } from "@/context/AppContext";
-import { t, CATEGORY_COLORS } from "@/lib/i18n";
+import { useAuth } from "@/context/AuthContext";
+import { t, CATEGORY_COLORS, type Category } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function TransactionsPage() {
-  const { lang, slips } = useApp();
+  const { lang } = useApp();
+  const { user } = useAuth();
 
-  // Group by date
-  const grouped = slips.reduce<Record<string, typeof slips>>((acc, s) => {
-    (acc[s.date] ??= []).push(s);
+  const { data: expenses = [] } = useQuery({
+    queryKey: ["expenses", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const grouped = expenses.reduce<Record<string, typeof expenses>>((acc, e) => {
+    (acc[e.date] ??= []).push(e);
     return acc;
   }, {});
 
@@ -24,23 +40,23 @@ export default function TransactionsPage() {
         <div key={date}>
           <p className="mb-2 text-xs font-semibold text-muted-foreground">{date}</p>
           <div className="space-y-2">
-            {grouped[date].map((slip) => (
-              <div key={slip.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+            {grouped[date].map((exp) => (
+              <div key={exp.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
                 <div className="flex items-center gap-3">
                   <div
                     className="flex h-9 w-9 items-center justify-center rounded-lg"
-                    style={{ background: CATEGORY_COLORS[slip.category] + "18" }}
+                    style={{ background: (CATEGORY_COLORS[exp.category as Category] || CATEGORY_COLORS.other) + "18" }}
                   >
-                    <div className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY_COLORS[slip.category] }} />
+                    <div className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY_COLORS[exp.category as Category] || CATEGORY_COLORS.other }} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{slip.recipient}</p>
+                    <p className="text-sm font-medium text-foreground">{exp.recipient}</p>
                     <p className="text-xs text-muted-foreground">
-                      {slip.time} · {t(slip.category as any, lang)}
+                      {exp.time} · {t((exp.category as Category) as any, lang)}
                     </p>
                   </div>
                 </div>
-                <span className="text-sm font-semibold text-foreground">-฿{slip.amount.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
               </div>
             ))}
           </div>
