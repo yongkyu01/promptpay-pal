@@ -30,6 +30,7 @@ const translations = {
   thb: { th: "฿", en: "฿" },
   slips: { th: "สลิป", en: "slips" },
   language: { th: "EN", en: "TH" },
+  logout: { th: "ออกจากระบบ", en: "Logout" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
