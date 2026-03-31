@@ -1,38 +1,46 @@
 import { useApp } from "@/context/AppContext";
 import { t } from "@/lib/i18n";
-import { simulateExtraction } from "@/lib/mockData";
-import { Upload, CheckCircle2, Image as ImageIcon } from "lucide-react";
+import { mockAiProcessor } from "@/lib/mockData";
+import { Upload, CheckCircle2, Image as ImageIcon, Sparkles } from "lucide-react";
 import { useState, useRef } from "react";
+import { toast } from "sonner";
 
 export default function UploadPage() {
   const { lang, addSlips } = useApp();
   const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<"idle" | "analyzing" | "done">("idle");
   const [extracted, setExtracted] = useState(0);
+  const [extractedData, setExtractedData] = useState<Array<{ recipient: string; amount: number }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setFiles(Array.from(e.target.files));
       setStatus("idle");
+      setExtractedData([]);
     }
   };
 
   const handleAnalyze = async () => {
     setStatus("analyzing");
     setExtracted(0);
-    // Simulate progressive extraction
+    setExtractedData([]);
+
+    const results = [];
     for (let i = 0; i < files.length; i++) {
-      await new Promise((r) => setTimeout(r, 600));
+      const slip = await mockAiProcessor(files[i], i);
+      results.push(slip);
       setExtracted(i + 1);
+      setExtractedData((prev) => [...prev, { recipient: slip.recipient, amount: slip.amount }]);
     }
-    const results = simulateExtraction(files.length);
+
     addSlips(results);
     setStatus("done");
-    setTimeout(() => {
-      setFiles([]);
-      setStatus("idle");
-    }, 2000);
+    toast.success(
+      lang === "th"
+        ? `วิเคราะห์สำเร็จ ${results.length} สลิป`
+        : `Successfully analyzed ${results.length} slips`
+    );
   };
 
   return (
@@ -73,12 +81,7 @@ export default function UploadPage() {
                   alt={f.name}
                   className="h-full w-full object-cover"
                 />
-                {status === "analyzing" && i < extracted && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-primary/60">
-                    <CheckCircle2 className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                )}
-                {status === "done" && (
+                {(status === "analyzing" || status === "done") && i < extracted && (
                   <div className="absolute inset-0 flex items-center justify-center bg-primary/60">
                     <CheckCircle2 className="h-6 w-6 text-primary-foreground" />
                   </div>
@@ -90,14 +93,15 @@ export default function UploadPage() {
           {status === "idle" && (
             <button
               onClick={handleAnalyze}
-              className="w-full rounded-xl gradient-gold py-3 text-sm font-bold text-accent-foreground shadow-gold transition-transform active:scale-95"
+              className="flex w-full items-center justify-center gap-2 rounded-xl gradient-gold py-3 text-sm font-bold text-accent-foreground shadow-gold transition-transform active:scale-95"
             >
-              {t("analyzing", lang).replace("...", "")} ({files.length} {t("slips", lang)})
+              <Sparkles className="h-4 w-4" />
+              {lang === "th" ? "AI วิเคราะห์สลิป" : "AI Analyze Slips"} ({files.length} {t("slips", lang)})
             </button>
           )}
 
           {status === "analyzing" && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="h-2 overflow-hidden rounded-full bg-secondary">
                 <div
                   className="h-full rounded-full gradient-primary transition-all duration-500"
@@ -107,13 +111,35 @@ export default function UploadPage() {
               <p className="text-center text-xs text-muted-foreground">
                 {t("analyzing", lang)} {extracted}/{files.length}
               </p>
+              {/* Live extraction results */}
+              {extractedData.length > 0 && (
+                <div className="space-y-1.5">
+                  {extractedData.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg bg-purple-light px-3 py-2 animate-slide-up">
+                      <span className="text-xs font-medium text-foreground truncate mr-2">{d.recipient}</span>
+                      <span className="text-xs font-semibold text-primary whitespace-nowrap">฿{d.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {status === "done" && (
-            <div className="flex items-center justify-center gap-2 text-primary">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="text-sm font-semibold">{t("analysisComplete", lang)}</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2 text-primary">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="text-sm font-semibold">{t("analysisComplete", lang)}</span>
+              </div>
+              {/* Final extraction summary */}
+              <div className="space-y-1.5">
+                {extractedData.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-lg bg-purple-light px-3 py-2">
+                    <span className="text-xs font-medium text-foreground truncate mr-2">{d.recipient}</span>
+                    <span className="text-xs font-semibold text-primary whitespace-nowrap">฿{d.amount.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
