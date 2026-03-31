@@ -1,14 +1,19 @@
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { mockAiProcessor } from "@/lib/mockData";
-import { Upload, CheckCircle2, Image as ImageIcon, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Upload, CheckCircle2, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function UploadPage() {
-  const { lang, addSlips } = useApp();
+  const { lang } = useApp();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [files, setFiles] = useState<File[]>([]);
-  const [status, setStatus] = useState<"idle" | "analyzing" | "done">("idle");
+  const [status, setStatus] = useState<"idle" | "uploading" | "analyzing" | "done">("idle");
   const [extracted, setExtracted] = useState(0);
   const [extractedData, setExtractedData] = useState<Array<{ recipient: string; amount: number }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,25 +27,84 @@ export default function UploadPage() {
   };
 
   const handleAnalyze = async () => {
-    setStatus("analyzing");
+    if (!user) return;
+    setStatus("uploading");
     setExtracted(0);
     setExtractedData([]);
 
-    const results = [];
-    for (let i = 0; i < files.length; i++) {
-      const slip = await mockAiProcessor(files[i], i);
-      results.push(slip);
-      setExtracted(i + 1);
-      setExtractedData((prev) => [...prev, { recipient: slip.recipient, amount: slip.amount }]);
-    }
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
 
-    addSlips(results);
-    setStatus("done");
-    toast.success(
-      lang === "th"
-        ? `วิเคราะห์สำเร็จ ${results.length} สลิป`
-        : `Successfully analyzed ${results.length} slips`
-    );
+        // 1. Upload image to Supabase Storage
+        const filePath = `${user.id}/${Date.now()}-${i}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("slips")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("slips")
+          .getPublicUrl(filePath);
+
+        // 2. Insert into slips table
+        const { data: slipData, error: slipError } = await supabase
+          .from("slips")
+          .insert({
+            user_id: user.id,
+            image_url: urlData.publicUrl,
+            storage_path: filePath,
+            is_processed: false,
+          })
+          .select()
+          .single();
+
+        if (slipError) throw slipError;
+
+        setStatus("analyzing");
+
+        // 3. Run mock AI processor
+        const aiResult = await mockAiProcessor(file, i);
+
+        // 4. Insert into expenses table
+        const { error: expenseError } = await supabase
+          .from("expenses")
+          .insert({
+            user_id: user.id,
+            slip_id: slipData.id,
+            amount: aiResult.amount,
+            recipient: aiResult.recipient,
+            category: aiResult.category,
+            date: aiResult.date,
+            time: aiResult.time,
+          });
+
+        if (expenseError) throw expenseError;
+
+        // 5. Mark slip as processed
+        await supabase
+          .from("slips")
+          .update({ is_processed: true })
+          .eq("id", slipData.id);
+
+        setExtracted(i + 1);
+        setExtractedData((prev) => [...prev, { recipient: aiResult.recipient, amount: aiResult.amount }]);
+      }
+
+      setStatus("done");
+      // Invalidate queries so Dashboard/Transactions/Cleanup refresh
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["slips"] });
+      toast.success(
+        lang === "th"
+          ? `วิเคราะห์สำเร็จ ${files.length} สลิป`
+          : `Successfully analyzed ${files.length} slips`
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+      setStatus("idle");
+    }
   };
 
   return (
@@ -72,7 +136,6 @@ export default function UploadPage() {
 
       {files.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
-          {/* Preview grid */}
           <div className="grid grid-cols-4 gap-2">
             {files.map((f, i) => (
               <div key={i} className="relative aspect-square overflow-hidden rounded-lg bg-secondary">
@@ -100,7 +163,7 @@ export default function UploadPage() {
             </button>
           )}
 
-          {status === "analyzing" && (
+          {(status === "uploading" || status === "analyzing") && (
             <div className="space-y-3">
               <div className="h-2 overflow-hidden rounded-full bg-secondary">
                 <div
@@ -109,9 +172,15 @@ export default function UploadPage() {
                 />
               </div>
               <p className="text-center text-xs text-muted-foreground">
-                {t("analyzing", lang)} {extracted}/{files.length}
+                {status === "uploading" && extracted === 0 ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {lang === "th" ? "กำลังอัปโหลด..." : "Uploading..."}
+                  </span>
+                ) : (
+                  <>{t("analyzing", lang)} {extracted}/{files.length}</>
+                )}
               </p>
-              {/* Live extraction results */}
               {extractedData.length > 0 && (
                 <div className="space-y-1.5">
                   {extractedData.map((d, i) => (
@@ -131,7 +200,6 @@ export default function UploadPage() {
                 <CheckCircle2 className="h-5 w-5" />
                 <span className="text-sm font-semibold">{t("analysisComplete", lang)}</span>
               </div>
-              {/* Final extraction summary */}
               <div className="space-y-1.5">
                 {extractedData.map((d, i) => (
                   <div key={i} className="flex items-center justify-between rounded-lg bg-purple-light px-3 py-2">
