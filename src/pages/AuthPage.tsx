@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
-import { t } from "@/lib/i18n";
+import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { LogIn, UserPlus, Loader2 } from "lucide-react";
 
