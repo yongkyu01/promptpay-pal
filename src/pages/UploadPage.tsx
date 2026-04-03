@@ -165,6 +165,7 @@ export default function UploadPage() {
       }
 
       setStatus("done");
+      fireConfetti();
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["slips"] });
       toast.success(
