@@ -252,7 +252,11 @@ export default function DashboardPage() {
             const Icon = getCategoryIcon(exp.category);
             const color = getCategoryColor(exp.category);
             return (
-              <div key={exp.id} className="flex items-center justify-between">
+              <button
+                key={exp.id}
+                onClick={() => navigate(`/expense/${exp.id}`)}
+                className="flex w-full items-center justify-between text-left transition-colors active:bg-secondary rounded-lg px-1 py-0.5"
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: color + "18" }}>
                     <Icon className="h-4 w-4" style={{ color }} />
@@ -265,7 +269,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
-              </div>
+              </button>
             );
           })}
           {recentExpenses.length === 0 && (

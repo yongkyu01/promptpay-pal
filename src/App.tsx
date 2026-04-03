@@ -38,6 +38,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/expense/:id" element={<ExpenseDetailPage />} />
         <Route path="/cleanup" element={<CleanupPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
