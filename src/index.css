@@ -110,3 +110,30 @@
     box-shadow: 0 4px 20px -4px hsl(var(--accent) / 0.4);
   }
 }
+
+/* Chart hover micro-interactions */
+.recharts-pie-sector,
+.recharts-bar-rectangle {
+  transition: transform 0.2s ease, filter 0.2s ease;
+  transform-origin: center;
+}
+
+.recharts-pie-sector:hover {
+  filter: brightness(1.15) drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+  transform: scale(1.04);
+}
+
+.recharts-bar-rectangle:hover {
+  filter: brightness(1.12);
+  transform: scaleY(1.03);
+  transform-origin: bottom;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
