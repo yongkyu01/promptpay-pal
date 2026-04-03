@@ -274,7 +274,7 @@ export default function ManualEntryPage() {
         {/* Memo */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "บันทึก / ชื่อร้าน" : "Memo / Store Name"}
+            {t("memo", lang)}
           </label>
           <input
             type="text"
