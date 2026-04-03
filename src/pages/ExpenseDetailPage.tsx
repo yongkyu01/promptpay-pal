@@ -95,9 +95,9 @@ export default function ExpenseDetailPage() {
   if (!expense) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-        <p className="text-sm text-muted-foreground">{lang === "th" ? "ไม่พบข้อมูล" : "Not found"}</p>
+        <p className="text-sm text-muted-foreground">{t("notFound", lang)}</p>
         <button onClick={() => navigate(-1)} className="text-sm font-medium text-primary">
-          {lang === "th" ? "กลับ" : "Go back"}
+          {t("goBack", lang)}
         </button>
       </div>
     );
