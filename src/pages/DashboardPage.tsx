@@ -271,6 +271,7 @@ export default function DashboardPage() {
 
       {/* Golf Report */}
       <GolfReport golfExpenses={golfExpenses as any} totalSpending={totalSpending} />
+      <GolfBetTracker golfExpenses={golfExpenses as any} />
 
       {/* Monthly Bar Chart */}
       <div className="rounded-2xl border border-border bg-card p-4">
