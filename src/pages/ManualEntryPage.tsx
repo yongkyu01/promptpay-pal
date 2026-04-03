@@ -248,7 +248,7 @@ export default function ManualEntryPage() {
                         : "bg-secondary text-muted-foreground"
                     }`}
                   >
-                    {lang === "th" ? opt.th : opt.en}
+                    {t(opt.tKey, lang)}
                   </button>
                 ))}
               </div>
