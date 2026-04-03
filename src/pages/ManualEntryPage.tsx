@@ -231,7 +231,7 @@ export default function ManualEntryPage() {
             {/* Golf Bet Tracker */}
             <div className="mt-2 pt-3 border-t border-border/50">
               <p className="text-xs font-semibold text-green-600 mb-2">
-                {lang === "th" ? "ผลการเดิมพัน" : "Bet Result"}
+                {t("betResult", lang)}
               </p>
               <div className="flex gap-2 mb-2">
                 {([
