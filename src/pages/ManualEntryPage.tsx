@@ -255,7 +255,7 @@ export default function ManualEntryPage() {
               {betResult !== "none" && (
                 <div className="flex items-center gap-3">
                   <span className="w-20 text-xs text-muted-foreground">
-                    {lang === "th" ? "จำนวนเงิน" : "Amount"}
+                    {t("amount", lang)}
                   </span>
                   <input
                     type="number"
