@@ -15,12 +15,6 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 type DatePreset = "all" | "week" | "month" | "custom";
 
-const DATE_LABELS: Record<DatePreset, { th: string; en: string }> = {
-  all: { th: "ทั้งหมด", en: "All" },
-  week: { th: "สัปดาห์นี้", en: "This Week" },
-  month: { th: "เดือนนี้", en: "This Month" },
-  custom: { th: "เลือกเอง", en: "Custom" },
-};
 
 export default function TransactionsPage() {
   const { lang } = useApp();
@@ -118,7 +112,7 @@ export default function TransactionsPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={lang === "th" ? "ค้นหาชื่อร้านค้า..." : "Search by store name..."}
+          placeholder={t("search", lang)}
           className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         {search && (
@@ -140,7 +134,7 @@ export default function TransactionsPage() {
                 : "bg-secondary text-muted-foreground"
             }`}
           >
-            {DATE_LABELS[p][lang]}
+            {t(p === "all" ? "all" : p === "week" ? "thisWeek" : p === "month" ? "thisMonth" : "custom", lang)}
           </button>
         ))}
       </div>
@@ -194,7 +188,7 @@ export default function TransactionsPage() {
       {/* Summary */}
       <div className="flex items-center justify-between rounded-xl bg-secondary px-4 py-2">
         <span className="text-xs text-muted-foreground">
-          {filtered.length} {lang === "th" ? "รายการ" : "items"}
+          {filtered.length} {t("transactionsCount", lang)}
         </span>
         <span className="text-sm font-bold text-foreground">
           ฿{totalFiltered.toLocaleString("th-TH", { minimumFractionDigits: 0 })}
@@ -204,7 +198,7 @@ export default function TransactionsPage() {
       {/* Transactions List */}
       {sortedDates.length === 0 && (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          {search ? (lang === "th" ? "ไม่พบผลลัพธ์" : "No results found") : t("noSlips", lang)}
+          {search ? t("notFound", lang) : t("noSlips", lang)}
         </p>
       )}
 

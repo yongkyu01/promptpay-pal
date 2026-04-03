@@ -6,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Pencil, Trash2, Share2, X, Calendar, Clock, User, Hash, FileText, Briefcase } from "lucide-react";
 import FortuneScoreCard from "@/components/FortuneScoreCard";
+import { t } from "@/lib/i18n";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -62,17 +63,17 @@ export default function ExpenseDetailPage() {
     try {
       await supabase.from("expenses").delete().eq("id", expense.id);
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success(lang === "th" ? "ลบรายการสำเร็จ" : "Expense deleted");
+      toast.success(t("deleteSuccess", lang));
       navigate(-1);
     } catch {
-      toast.error(lang === "th" ? "ลบไม่สำเร็จ" : "Failed to delete");
+      toast.error(t("deleteFailed", lang));
     }
   };
 
   const handleShareLine = () => {
     if (!expense) return;
     const text = [
-      `💸 ${lang === "th" ? "รายจ่าย" : "Expense"}`,
+      `💸 ${t("expense", lang)}`,
       `📍 ${expense.recipient}`,
       `💰 ฿${Number(expense.amount).toLocaleString()}`,
       `📅 ${expense.date}${expense.time ? ` ${expense.time}` : ""}`,
@@ -94,9 +95,9 @@ export default function ExpenseDetailPage() {
   if (!expense) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-        <p className="text-sm text-muted-foreground">{lang === "th" ? "ไม่พบข้อมูล" : "Not found"}</p>
+        <p className="text-sm text-muted-foreground">{t("notFound", lang)}</p>
         <button onClick={() => navigate(-1)} className="text-sm font-medium text-primary">
-          {lang === "th" ? "กลับ" : "Go back"}
+          {t("goBack", lang)}
         </button>
       </div>
     );

@@ -1,5 +1,6 @@
 import type { Lang } from "./i18n";
 import { getCategoryLabel, type Category } from "./categories";
+import { t } from "./i18n";
 
 interface Expense {
   id: string;
@@ -15,13 +16,13 @@ interface Expense {
 
 export function exportToCSV(expenses: Expense[], lang: Lang) {
   const headers = [
-    lang === "th" ? "วันที่" : "Date",
-    lang === "th" ? "เวลา" : "Time",
-    lang === "th" ? "ผู้รับเงิน" : "Recipient",
-    lang === "th" ? "จำนวน (บาท)" : "Amount (THB)",
-    lang === "th" ? "หมวดหมู่" : "Category",
-    lang === "th" ? "วิธีชำระ" : "Payment",
-    lang === "th" ? "ประเภท" : "Type",
+    t("date", lang),
+    t("time", lang),
+    t("receiver", lang),
+    t("amount", lang),
+    t("category", lang),
+    t("paymentMethod", lang),
+    t("expense", lang),
     "Ref No.",
   ];
 

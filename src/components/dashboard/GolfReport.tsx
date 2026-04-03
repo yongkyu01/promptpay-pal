@@ -1,5 +1,6 @@
 import { useApp } from "@/context/AppContext";
 import { CircleDot } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 interface GolfExpense {
   amount: number;
@@ -27,10 +28,10 @@ export default function GolfReport({ golfExpenses, totalSpending }: GolfReportPr
   const golfPct = totalSpending > 0 ? ((totalGolf / totalSpending) * 100).toFixed(1) : "0";
 
   const items = [
-    { label: lang === "th" ? "กรีนฟี" : "Green Fee", value: totalGreen, color: "#22C55E" },
-    { label: lang === "th" ? "แคดดี้" : "Caddy Fee", value: totalCaddy, color: "#16A34A" },
-    { label: lang === "th" ? "ทิป" : "Tips", value: totalTip, color: "#15803D" },
-    { label: lang === "th" ? "เรียนกอล์ฟ" : "Lesson", value: totalLesson, color: "#166534" },
+    { label: t("greenFee", lang), value: totalGreen, color: "#22C55E" },
+    { label: t("caddyFee", lang), value: totalCaddy, color: "#16A34A" },
+    { label: t("tips", lang), value: totalTip, color: "#15803D" },
+    { label: t("lessonFee", lang), value: totalLesson, color: "#166534" },
   ];
 
   return (
@@ -38,14 +39,14 @@ export default function GolfReport({ golfExpenses, totalSpending }: GolfReportPr
       <div className="flex items-center gap-2 mb-3">
         <CircleDot className="h-4 w-4 text-green-500" />
         <h2 className="text-sm font-semibold text-foreground">
-          {lang === "th" ? "กอล์ฟ ไลฟ์ รีพอร์ต" : "Golf Life Report"}
+          {t("golfLifeReport", lang)}
         </h2>
       </div>
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-1">
           <p className="text-2xl font-bold text-foreground">฿{Math.round(totalGolf).toLocaleString()}</p>
           <p className="text-xs text-muted-foreground">
-            {golfExpenses.length} {lang === "th" ? "ครั้ง" : "rounds"} · {golfPct}% {lang === "th" ? "ของค่าใช้จ่ายทั้งหมด" : "of total"}
+            {golfExpenses.length} {t("rounds", lang)} · {golfPct}% {t("ofTotal", lang)}
           </p>
         </div>
       </div>

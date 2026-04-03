@@ -12,11 +12,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
+import { t } from "@/lib/i18n";
 
 const PAYMENT_METHODS = [
-  { key: "promptpay", th: "พร้อมเพย์", en: "PromptPay" },
-  { key: "cash", th: "เงินสด", en: "Cash" },
-  { key: "bank_transfer", th: "โอนเงิน", en: "Bank Transfer" },
+  { key: "promptpay", tKey: "promptpay" as const },
+  { key: "cash", tKey: "cash" as const },
+  { key: "bank_transfer", tKey: "bankTransfer" as const },
 ] as const;
 
 export default function ManualEntryPage() {
@@ -47,7 +48,7 @@ export default function ManualEntryPage() {
     if (!user) return;
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
-      toast.error(lang === "th" ? "กรุณาใส่จำนวนเงิน" : "Please enter an amount");
+      toast.error(t("enterAmount", lang));
       return;
     }
 
@@ -56,7 +57,7 @@ export default function ManualEntryPage() {
       const insertData: any = {
         user_id: user.id,
         amount: numAmount,
-        recipient: memo.trim() || (lang === "th" ? "บันทึกเอง" : "Manual entry"),
+        recipient: memo.trim() || t("manualEntry", lang),
         category,
         date: format(date, "yyyy-MM-dd"),
         payment_method: paymentMethod,
@@ -76,7 +77,7 @@ export default function ManualEntryPage() {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success(lang === "th" ? "บันทึกสำเร็จ!" : "Saved successfully!");
+      toast.success(t("savedSuccess", lang));
       navigate("/");
     } catch (err: any) {
       toast.error(err.message || "Save failed");
@@ -92,7 +93,7 @@ export default function ManualEntryPage() {
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <h2 className="text-lg font-bold text-foreground">
-          {lang === "th" ? "บันทึกรายจ่าย" : "Add Expense"}
+          {t("addExpense", lang)}
         </h2>
       </div>
 
@@ -107,9 +108,7 @@ export default function ManualEntryPage() {
                 <User className="h-4 w-4 text-muted-foreground" />
               )}
               <span className="text-sm font-medium text-foreground">
-                {expenseType === "business"
-                  ? (lang === "th" ? "ค่าใช้จ่ายธุรกิจ" : "Business Expense")
-                  : (lang === "th" ? "ค่าใช้จ่ายส่วนตัว" : "Personal Expense")}
+                {expenseType === "business" ? t("businessExpense", lang) : t("personalExpense", lang)}
               </span>
             </div>
             <Switch
@@ -122,7 +121,7 @@ export default function ManualEntryPage() {
         {/* Amount */}
         <div className="rounded-2xl border border-border bg-card p-5 text-center">
           <label className="mb-2 block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {lang === "th" ? "จำนวนเงิน (บาท)" : "Amount (THB)"}
+            {t("amount", lang)}
           </label>
           <div className="flex items-center justify-center gap-1">
             <span className="text-2xl font-bold text-muted-foreground">฿</span>
@@ -141,7 +140,7 @@ export default function ManualEntryPage() {
         {/* Payment Method */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "วิธีชำระเงิน" : "Payment Method"}
+            {t("paymentMethod", lang)}
           </label>
           <div className="flex gap-2">
             {PAYMENT_METHODS.map((pm) => (
@@ -154,7 +153,7 @@ export default function ManualEntryPage() {
                     : "bg-secondary text-muted-foreground"
                 }`}
               >
-                {lang === "th" ? pm.th : pm.en}
+                {t(pm.tKey, lang)}
               </button>
             ))}
           </div>
@@ -163,7 +162,7 @@ export default function ManualEntryPage() {
         {/* Date */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "วันที่" : "Date"}
+            {t("date", lang)}
           </label>
           <Popover>
             <PopoverTrigger asChild>
@@ -181,7 +180,7 @@ export default function ManualEntryPage() {
         {/* Category */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "หมวดหมู่" : "Category"}
+            {t("category", lang)}
           </label>
           <div className="grid grid-cols-4 gap-2">
             {CATEGORIES.map((cat) => {
@@ -197,7 +196,7 @@ export default function ManualEntryPage() {
                   }`}
                 >
                   <Icon className="h-5 w-5" style={{ color: cfg.color }} />
-                  {lang === "th" ? cfg.labelTh : cfg.labelEn}
+                  {cfg.label[lang]}
                 </button>
               );
             })}
@@ -208,13 +207,13 @@ export default function ManualEntryPage() {
         {category === "golf" && (
           <div className="rounded-2xl border-2 border-green-500/30 bg-green-50/5 p-4 space-y-3">
             <p className="text-xs font-semibold text-green-600">
-              {lang === "th" ? "รายละเอียดกอล์ฟ" : "Golf Details"}
+              {t("golfDetails", lang)}
             </p>
             {[
-              { label: lang === "th" ? "กรีนฟี" : "Green Fee", value: greenFee, set: setGreenFee },
-              { label: lang === "th" ? "แคดดี้" : "Caddy Fee", value: caddyFee, set: setCaddyFee },
-              { label: lang === "th" ? "ทิป" : "Tips", value: golfTip, set: setGolfTip },
-              { label: lang === "th" ? "เรียนกอล์ฟ" : "Lesson Fee", value: lessonFee, set: setLessonFee },
+              { label: t("greenFee", lang), value: greenFee, set: setGreenFee },
+              { label: t("caddyFee", lang), value: caddyFee, set: setCaddyFee },
+              { label: t("tips", lang), value: golfTip, set: setGolfTip },
+              { label: t("lessonFee", lang), value: lessonFee, set: setLessonFee },
             ].map((f) => (
               <div key={f.label} className="flex items-center gap-3">
                 <span className="w-20 text-xs text-muted-foreground">{f.label}</span>
@@ -232,13 +231,13 @@ export default function ManualEntryPage() {
             {/* Golf Bet Tracker */}
             <div className="mt-2 pt-3 border-t border-border/50">
               <p className="text-xs font-semibold text-green-600 mb-2">
-                {lang === "th" ? "ผลการเดิมพัน" : "Bet Result"}
+                {t("betResult", lang)}
               </p>
               <div className="flex gap-2 mb-2">
                 {([
-                  { key: "none" as const, th: "ไม่มี", en: "None" },
-                  { key: "win" as const, th: "ชนะ 🏆", en: "Win 🏆" },
-                  { key: "loss" as const, th: "แพ้ 😢", en: "Loss 😢" },
+                  { key: "none" as const, tKey: "betNone" as const },
+                  { key: "win" as const, tKey: "betWin" as const },
+                  { key: "loss" as const, tKey: "betLoss" as const },
                 ] as const).map((opt) => (
                   <button
                     key={opt.key}
@@ -249,14 +248,14 @@ export default function ManualEntryPage() {
                         : "bg-secondary text-muted-foreground"
                     }`}
                   >
-                    {lang === "th" ? opt.th : opt.en}
+                    {t(opt.tKey, lang)}
                   </button>
                 ))}
               </div>
               {betResult !== "none" && (
                 <div className="flex items-center gap-3">
                   <span className="w-20 text-xs text-muted-foreground">
-                    {lang === "th" ? "จำนวนเงิน" : "Amount"}
+                    {t("amount", lang)}
                   </span>
                   <input
                     type="number"
@@ -275,13 +274,13 @@ export default function ManualEntryPage() {
         {/* Memo */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "บันทึก / ชื่อร้าน" : "Memo / Store Name"}
+            {t("memo", lang)}
           </label>
           <input
             type="text"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            placeholder={lang === "th" ? "เช่น ข้าวมันไก่, Grab..." : "e.g. Lunch, Grab..."}
+            placeholder={t("memoPlaceholder", lang)}
             className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
@@ -295,10 +294,10 @@ export default function ManualEntryPage() {
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {lang === "th" ? "กำลังบันทึก..." : "Saving..."}
+              {t("saving", lang)}
             </>
           ) : (
-            lang === "th" ? "บันทึกรายจ่าย" : "Save Expense"
+            t("saveExpense", lang)
           )}
         </button>
       </div>

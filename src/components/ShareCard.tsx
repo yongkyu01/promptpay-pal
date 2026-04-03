@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { Share2, Download, X } from "lucide-react";
 import { generateFortuneScore, getFortuneMessage, getFortuneColor } from "@/lib/fortuneScore";
+import { t } from "@/lib/i18n";
 
 interface ShareCardProps {
   totalSpending: number;
@@ -29,7 +30,6 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
     canvas.width = w;
     canvas.height = h;
 
-    // Background gradient
     const grad = ctx.createLinearGradient(0, 0, w, h);
     grad.addColorStop(0, "#1e1b4b");
     grad.addColorStop(0.5, "#312e81");
@@ -37,7 +37,6 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Decorative circles
     ctx.globalAlpha = 0.1;
     ctx.beginPath();
     ctx.arc(w * 0.8, h * 0.15, 200, 0, Math.PI * 2);
@@ -48,18 +47,15 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // App name
     ctx.fillStyle = "rgba(255,255,255,0.5)";
     ctx.font = "600 16px Inter, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("PromptPay Buddy", w / 2, 60);
 
-    // Title
     ctx.fillStyle = "#ffffff";
     ctx.font = "700 28px Inter, Noto Sans Thai, sans-serif";
-    ctx.fillText(lang === "th" ? "สรุปค่าใช้จ่าย" : "Spending Summary", w / 2, 130);
+    ctx.fillText(t("spendingSummary", lang), w / 2, 130);
 
-    // Total amount card
     const cardY = 180;
     ctx.fillStyle = "rgba(255,255,255,0.08)";
     roundRect(ctx, 40, cardY, w - 80, 160, 20);
@@ -67,7 +63,7 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
     ctx.font = "500 14px Inter, sans-serif";
-    ctx.fillText(lang === "th" ? "ยอดใช้จ่ายทั้งหมด" : "Total Spending", w / 2, cardY + 45);
+    ctx.fillText(t("totalSpendingFull", lang), w / 2, cardY + 45);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "800 48px Inter, sans-serif";
@@ -75,9 +71,8 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
 
     ctx.fillStyle = "rgba(255,255,255,0.4)";
     ctx.font = "500 14px Inter, sans-serif";
-    ctx.fillText(`${slipCount} ${lang === "th" ? "รายการ" : "transactions"}`, w / 2, cardY + 140);
+    ctx.fillText(`${slipCount} ${t("transactionsCount", lang)}`, w / 2, cardY + 140);
 
-    // Top category
     if (topCategory) {
       const catY = 400;
       ctx.fillStyle = "rgba(255,255,255,0.08)";
@@ -86,14 +81,13 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
 
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.font = "500 13px Inter, sans-serif";
-      ctx.fillText(lang === "th" ? "หมวดหมู่สูงสุด" : "Top Category", w / 2, catY + 35);
+      ctx.fillText(t("topCategory", lang), w / 2, catY + 35);
 
       ctx.fillStyle = "#ffffff";
       ctx.font = "700 22px Inter, Noto Sans Thai, sans-serif";
       ctx.fillText(`${topCategory.name} · ฿${topCategory.amount.toLocaleString()}`, w / 2, catY + 72);
     }
 
-    // Fortune score
     const fY = 560;
     ctx.fillStyle = "rgba(255,255,255,0.08)";
     roundRect(ctx, 40, fY, w - 80, 180, 20);
@@ -101,7 +95,7 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
     ctx.font = "500 13px Inter, sans-serif";
-    ctx.fillText(lang === "th" ? "ดวงการเงิน" : "Fortune Score", w / 2, fY + 35);
+    ctx.fillText(t("fortuneScore", lang), w / 2, fY + 35);
 
     ctx.fillStyle = fortuneColor;
     ctx.font = "800 64px Inter, sans-serif";
@@ -111,7 +105,6 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
     ctx.font = "500 14px Inter, Noto Sans Thai, sans-serif";
     ctx.fillText(`${fortuneMsg.emoji} ${fortuneMsg.text}`, w / 2, fY + 145);
 
-    // Footer
     ctx.fillStyle = "rgba(255,255,255,0.25)";
     ctx.font = "400 12px Inter, sans-serif";
     ctx.fillText(new Date().toLocaleDateString(), w / 2, h - 40);
@@ -137,7 +130,7 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
       if (navigator.share) {
         try {
           await navigator.share({ files: [file], title: "PromptPay Buddy" });
-        } catch { /* user cancelled */ }
+        } catch { /* cancelled */ }
       } else {
         handleDownload();
       }
@@ -151,7 +144,7 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
         className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-xs font-semibold text-foreground transition-transform active:scale-95"
       >
         <Share2 className="h-4 w-4 text-primary" />
-        {lang === "th" ? "แชร์การ์ด" : "Share Card"}
+        {t("shareCard", lang)}
       </button>
 
       <canvas ref={canvasRef} className="hidden" />
@@ -162,25 +155,21 @@ export default function ShareCardButton({ totalSpending, slipCount, topCategory,
             <button onClick={() => setOpen(false)} className="absolute -top-3 -right-3 rounded-full bg-secondary p-2 shadow-lg z-10">
               <X className="h-4 w-4 text-foreground" />
             </button>
-            <img
-              src={canvasRef.current?.toDataURL()}
-              alt="Share card"
-              className="w-full rounded-2xl shadow-2xl"
-            />
+            <img src={canvasRef.current?.toDataURL()} alt="Share card" className="w-full rounded-2xl shadow-2xl" />
             <div className="mt-4 flex gap-3">
               <button
                 onClick={handleDownload}
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-semibold text-foreground transition-transform active:scale-95"
               >
                 <Download className="h-4 w-4" />
-                {lang === "th" ? "ดาวน์โหลด" : "Download"}
+                {t("download", lang)}
               </button>
               <button
                 onClick={handleShare}
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-semibold text-primary-foreground shadow-primary transition-transform active:scale-95"
               >
                 <Share2 className="h-4 w-4" />
-                {lang === "th" ? "แชร์" : "Share"}
+                {t("share", lang)}
               </button>
             </div>
           </div>

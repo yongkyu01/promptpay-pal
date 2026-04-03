@@ -2,6 +2,7 @@ import { Plus, ScanLine, PenLine } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
+import { t } from "@/lib/i18n";
 import {
   Drawer,
   DrawerContent,
@@ -16,15 +17,15 @@ export default function AddExpenseFAB() {
   const options = [
     {
       icon: ScanLine,
-      label: lang === "th" ? "สแกนสลิป (AI)" : "AI Scan Slip",
-      desc: lang === "th" ? "ถ่ายรูปหรือเลือกภาพสลิป" : "Take photo or select slip image",
+      label: t("aiScan", lang),
+      desc: t("aiScanDesc", lang),
       action: () => { setOpen(false); navigate("/upload"); },
       gradient: "gradient-primary",
     },
     {
       icon: PenLine,
-      label: lang === "th" ? "บันทึกเอง" : "Manual Entry",
-      desc: lang === "th" ? "ป้อนรายจ่ายด้วยตัวเอง" : "Enter expense details manually",
+      label: t("manualEntry", lang),
+      desc: t("manualEntryDesc", lang),
       action: () => { setOpen(false); navigate("/manual"); },
       gradient: "gradient-gold",
     },
@@ -40,7 +41,7 @@ export default function AddExpenseFAB() {
       <DrawerContent className="pb-8">
         <div className="mx-auto w-full max-w-lg px-4 pt-4">
           <h3 className="mb-4 text-center text-base font-bold text-foreground">
-            {lang === "th" ? "เพิ่มรายจ่าย" : "Add Expense"}
+            {t("addExpense", lang)}
           </h3>
           <div className="space-y-3">
             {options.map((opt) => (

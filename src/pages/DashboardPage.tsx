@@ -22,10 +22,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Period = "this" | "last" | "3months";
 
-const PERIOD_LABELS: Record<Period, { th: string; en: string }> = {
-  this: { th: "เดือนนี้", en: "This Month" },
-  last: { th: "เดือนที่แล้ว", en: "Last Month" },
-  "3months": { th: "3 เดือน", en: "3 Months" },
+const PERIOD_KEY: Record<Period, "periodThis" | "periodLast" | "period3m"> = {
+  this: "periodThis",
+  last: "periodLast",
+  "3months": "period3m",
 };
 
 function getPeriodRange(period: Period) {
@@ -137,15 +137,15 @@ export default function DashboardPage() {
       <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all" className="text-xs gap-1">
-            {lang === "th" ? "ทั้งหมด" : "All"}
+            {t("all", lang)}
           </TabsTrigger>
           <TabsTrigger value="personal" className="text-xs gap-1">
             <UserIcon className="h-3 w-3" />
-            {lang === "th" ? "ส่วนตัว" : "Personal"}
+            {t("personal", lang)}
           </TabsTrigger>
           <TabsTrigger value="business" className="text-xs gap-1">
             <Briefcase className="h-3 w-3" />
-            {lang === "th" ? "ธุรกิจ" : "Business"}
+            {t("business", lang)}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                   : "bg-secondary text-muted-foreground"
               }`}
             >
-              {PERIOD_LABELS[p][lang]}
+              {t(PERIOD_KEY[p], lang)}
             </button>
           ))}
         </div>
@@ -191,7 +191,7 @@ export default function DashboardPage() {
           <p className="text-[10px] text-primary-foreground/50">
             ≈ ₩{toKRW(totalSpending).toLocaleString()} KRW
           </p>
-          <p className="text-xs text-primary-foreground/60">{PERIOD_LABELS[period][lang]}</p>
+          <p className="text-xs text-primary-foreground/60">{t(PERIOD_KEY[period], lang)}</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -207,16 +207,16 @@ export default function DashboardPage() {
       {mode === "business" && (
         <div className="rounded-2xl border border-border bg-card p-4">
           <h2 className="mb-2 text-sm font-semibold text-foreground">
-            {lang === "th" ? "สรุปค่าใช้จ่ายธุรกิจ" : "Business Expense Summary"}
+            {t("businessExpenseSummary", lang)}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-secondary p-3">
-              <p className="text-[10px] text-muted-foreground">{lang === "th" ? "รายจ่ายธุรกิจ" : "Business Expenses"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("businessExpenses", lang)}</p>
               <p className="text-lg font-bold text-foreground">฿{Math.round(businessTotal).toLocaleString()}</p>
               <p className="text-[10px] text-muted-foreground">≈ ₩{toKRW(businessTotal).toLocaleString()}</p>
             </div>
             <div className="rounded-xl bg-secondary p-3">
-              <p className="text-[10px] text-muted-foreground">{lang === "th" ? "จำนวนรายการ" : "Transactions"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("transactionCount", lang)}</p>
               <p className="text-lg font-bold text-foreground">{businessExpenses.length}</p>
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function DashboardPage() {
       {/* Monthly Bar Chart */}
       <div className="rounded-2xl border border-border bg-card p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
-          {lang === "th" ? "รายจ่ายรายเดือน" : "Monthly Spending"}
+          {t("monthlySpending", lang)}
         </h2>
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
@@ -285,7 +285,7 @@ export default function DashboardPage() {
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={36} />
               <Tooltip
-                formatter={(value: number) => [`฿${value.toLocaleString()}`, lang === "th" ? "ยอดใช้จ่าย" : "Spending"]}
+                formatter={(value: number) => [`฿${value.toLocaleString()}`, t("spending", lang)]}
                 contentStyle={{ borderRadius: "12px", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: "12px" }}
               />
               <Bar dataKey="total" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
