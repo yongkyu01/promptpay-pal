@@ -66,7 +66,7 @@ export default function BudgetSettingsPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    {lang === "th" ? cfg.labelTh : cfg.labelEn}
+                    {cfg.label[lang]}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
