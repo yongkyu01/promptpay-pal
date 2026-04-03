@@ -10,6 +10,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import UploadPage from "@/pages/UploadPage";
 import TransactionsPage from "@/pages/TransactionsPage";
 import CleanupPage from "@/pages/CleanupPage";
+import ExpenseDetailPage from "@/pages/ExpenseDetailPage";
 import AuthPage from "@/pages/AuthPage";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -37,6 +38,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/expense/:id" element={<ExpenseDetailPage />} />
         <Route path="/cleanup" element={<CleanupPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
