@@ -93,7 +93,7 @@ export default function ManualEntryPage() {
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <h2 className="text-lg font-bold text-foreground">
-          {lang === "th" ? "บันทึกรายจ่าย" : "Add Expense"}
+          {t("addExpense", lang)}
         </h2>
       </div>
 
