@@ -223,6 +223,9 @@ export default function ExpenseDetailPage() {
           </div>
         </div>
 
+        {/* Fortune Score */}
+        {refNo && <FortuneScoreCard refNo={refNo} />}
+
         {/* LINE Share Button */}
         <button
           onClick={handleShareLine}
