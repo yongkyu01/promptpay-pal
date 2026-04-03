@@ -15,9 +15,9 @@ import { Switch } from "@/components/ui/switch";
 import { t } from "@/lib/i18n";
 
 const PAYMENT_METHODS = [
-  { key: "promptpay", th: "พร้อมเพย์", en: "PromptPay" },
-  { key: "cash", th: "เงินสด", en: "Cash" },
-  { key: "bank_transfer", th: "โอนเงิน", en: "Bank Transfer" },
+  { key: "promptpay", tKey: "promptpay" as const },
+  { key: "cash", tKey: "cash" as const },
+  { key: "bank_transfer", tKey: "bankTransfer" as const },
 ] as const;
 
 export default function ManualEntryPage() {
