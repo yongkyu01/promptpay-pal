@@ -39,6 +39,10 @@ export default function ManualEntryPage() {
   const [golfTip, setGolfTip] = useState("");
   const [lessonFee, setLessonFee] = useState("");
 
+  // Golf bet fields
+  const [betResult, setBetResult] = useState<"none" | "win" | "loss">("none");
+  const [betAmount, setBetAmount] = useState("");
+
   const handleSave = async () => {
     if (!user) return;
     const numAmount = parseFloat(amount);
