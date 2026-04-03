@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          payment_method: string
           recipient: string
           ref_no: string | null
           slip_id: string | null
@@ -33,6 +34,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          payment_method?: string
           recipient: string
           ref_no?: string | null
           slip_id?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          payment_method?: string
           recipient?: string
           ref_no?: string | null
           slip_id?: string | null
