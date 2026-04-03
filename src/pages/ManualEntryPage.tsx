@@ -210,10 +210,10 @@ export default function ManualEntryPage() {
               {t("golfDetails", lang)}
             </p>
             {[
-              { label: lang === "th" ? "กรีนฟี" : "Green Fee", value: greenFee, set: setGreenFee },
-              { label: lang === "th" ? "แคดดี้" : "Caddy Fee", value: caddyFee, set: setCaddyFee },
-              { label: lang === "th" ? "ทิป" : "Tips", value: golfTip, set: setGolfTip },
-              { label: lang === "th" ? "เรียนกอล์ฟ" : "Lesson Fee", value: lessonFee, set: setLessonFee },
+              { label: t("greenFee", lang), value: greenFee, set: setGreenFee },
+              { label: t("caddyFee", lang), value: caddyFee, set: setCaddyFee },
+              { label: t("tips", lang), value: golfTip, set: setGolfTip },
+              { label: t("lessonFee", lang), value: lessonFee, set: setLessonFee },
             ].map((f) => (
               <div key={f.label} className="flex items-center gap-3">
                 <span className="w-20 text-xs text-muted-foreground">{f.label}</span>
