@@ -57,7 +57,7 @@ export default function ManualEntryPage() {
       const insertData: any = {
         user_id: user.id,
         amount: numAmount,
-        recipient: memo.trim() || (lang === "th" ? "บันทึกเอง" : "Manual entry"),
+        recipient: memo.trim() || t("manualEntry", lang),
         category,
         date: format(date, "yyyy-MM-dd"),
         payment_method: paymentMethod,
