@@ -235,9 +235,9 @@ export default function ManualEntryPage() {
               </p>
               <div className="flex gap-2 mb-2">
                 {([
-                  { key: "none" as const, th: "ไม่มี", en: "None" },
-                  { key: "win" as const, th: "ชนะ 🏆", en: "Win 🏆" },
-                  { key: "loss" as const, th: "แพ้ 😢", en: "Loss 😢" },
+                  { key: "none" as const, tKey: "betNone" as const },
+                  { key: "win" as const, tKey: "betWin" as const },
+                  { key: "loss" as const, tKey: "betLoss" as const },
                 ] as const).map((opt) => (
                   <button
                     key={opt.key}
