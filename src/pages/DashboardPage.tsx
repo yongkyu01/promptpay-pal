@@ -167,7 +167,15 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
-        <ExportButton expenses={expenses} />
+        <div className="flex items-center gap-2">
+          <ShareCardButton
+            totalSpending={totalSpending}
+            slipCount={expenses.length}
+            topCategory={categoryData[0] ? { name: categoryData[0].name, amount: categoryData[0].value } : undefined}
+            refNo={recentExpenses[0]?.ref_no ?? undefined}
+          />
+          <ExportButton expenses={expenses} />
+        </div>
       </div>
 
       {/* Stats Cards */}
