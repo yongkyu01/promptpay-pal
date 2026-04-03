@@ -137,15 +137,15 @@ export default function DashboardPage() {
       <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all" className="text-xs gap-1">
-            {lang === "th" ? "ทั้งหมด" : "All"}
+            {t("all", lang)}
           </TabsTrigger>
           <TabsTrigger value="personal" className="text-xs gap-1">
             <UserIcon className="h-3 w-3" />
-            {lang === "th" ? "ส่วนตัว" : "Personal"}
+            {t("personal", lang)}
           </TabsTrigger>
           <TabsTrigger value="business" className="text-xs gap-1">
             <Briefcase className="h-3 w-3" />
-            {lang === "th" ? "ธุรกิจ" : "Business"}
+            {t("business", lang)}
           </TabsTrigger>
         </TabsList>
       </Tabs>
