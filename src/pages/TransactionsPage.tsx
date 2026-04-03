@@ -198,7 +198,7 @@ export default function TransactionsPage() {
       {/* Transactions List */}
       {sortedDates.length === 0 && (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          {search ? (lang === "th" ? "ไม่พบผลลัพธ์" : "No results found") : t("noSlips", lang)}
+          {search ? t("notFound", lang) : t("noSlips", lang)}
         </p>
       )}
 
