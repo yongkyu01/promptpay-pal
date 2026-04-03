@@ -207,7 +207,7 @@ export default function DashboardPage() {
       {mode === "business" && (
         <div className="rounded-2xl border border-border bg-card p-4">
           <h2 className="mb-2 text-sm font-semibold text-foreground">
-            {lang === "th" ? "สรุปค่าใช้จ่ายธุรกิจ" : "Business Expense Summary"}
+            {t("businessExpenseSummary", lang)}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-secondary p-3">
