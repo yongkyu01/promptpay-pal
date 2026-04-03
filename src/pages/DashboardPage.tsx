@@ -15,7 +15,9 @@ import { startOfMonth, subMonths, format } from "date-fns";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import BudgetProgress from "@/components/dashboard/BudgetProgress";
 import GolfReport from "@/components/dashboard/GolfReport";
+import GolfBetTracker from "@/components/dashboard/GolfBetTracker";
 import ExportButton from "@/components/dashboard/ExportButton";
+import ShareCardButton from "@/components/ShareCard";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Period = "this" | "last" | "3months";
