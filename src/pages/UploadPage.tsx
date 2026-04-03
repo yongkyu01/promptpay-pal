@@ -286,6 +286,10 @@ export default function UploadPage() {
                   <ExtractedItem key={i} data={d} />
                 ))}
               </div>
+              {/* Fortune Score for last valid slip */}
+              {extractedData.filter(d => !d.skipped && d.ref_no).length > 0 && (
+                <FortuneScoreCard refNo={extractedData.filter(d => !d.skipped && d.ref_no).pop()!.ref_no} />
+              )}
             </div>
           )}
         </div>
