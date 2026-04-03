@@ -32,6 +32,23 @@ export default function TransactionsPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [slipImageUrl, setSlipImageUrl] = useState<string | null>(null);
+
+  const openDetail = async (exp: any) => {
+    setSelectedExpense(exp);
+    setDetailOpen(true);
+    setSlipImageUrl(null);
+    if (exp.slip_id) {
+      const { data: slip } = await supabase
+        .from("slips")
+        .select("image_url")
+        .eq("id", exp.slip_id)
+        .single();
+      if (slip?.image_url) setSlipImageUrl(slip.image_url);
+    }
+  };
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses", user?.id],
