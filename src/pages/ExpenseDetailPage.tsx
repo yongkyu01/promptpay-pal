@@ -63,7 +63,7 @@ export default function ExpenseDetailPage() {
     try {
       await supabase.from("expenses").delete().eq("id", expense.id);
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success(lang === "th" ? "ลบรายการสำเร็จ" : "Expense deleted");
+      toast.success(t("deleteSuccess", lang));
       navigate(-1);
     } catch {
       toast.error(lang === "th" ? "ลบไม่สำเร็จ" : "Failed to delete");
