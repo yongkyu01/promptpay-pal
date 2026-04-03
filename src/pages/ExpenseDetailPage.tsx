@@ -73,7 +73,7 @@ export default function ExpenseDetailPage() {
   const handleShareLine = () => {
     if (!expense) return;
     const text = [
-      `💸 ${lang === "th" ? "รายจ่าย" : "Expense"}`,
+      `💸 ${t("expense", lang)}`,
       `📍 ${expense.recipient}`,
       `💰 ฿${Number(expense.amount).toLocaleString()}`,
       `📅 ${expense.date}${expense.time ? ` ${expense.time}` : ""}`,
