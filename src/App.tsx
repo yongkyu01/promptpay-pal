@@ -45,6 +45,7 @@ function AppContent() {
         <Route path="/cleanup" element={<CleanupPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <AddExpenseFAB />
       <BottomTabBar />
     </div>
   );
