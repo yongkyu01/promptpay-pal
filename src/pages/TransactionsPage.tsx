@@ -188,7 +188,7 @@ export default function TransactionsPage() {
       {/* Summary */}
       <div className="flex items-center justify-between rounded-xl bg-secondary px-4 py-2">
         <span className="text-xs text-muted-foreground">
-          {filtered.length} {lang === "th" ? "รายการ" : "items"}
+          {filtered.length} {t("transactionsCount", lang)}
         </span>
         <span className="text-sm font-bold text-foreground">
           ฿{totalFiltered.toLocaleString("th-TH", { minimumFractionDigits: 0 })}
