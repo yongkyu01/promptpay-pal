@@ -13,6 +13,9 @@ interface ExtractedSlipData {
   date: string;
   ref_no: string;
   category: string;
+  is_valid_slip: boolean;
+  skipped?: boolean;
+  skip_reason?: string;
 }
 
 export default function UploadPage() {
