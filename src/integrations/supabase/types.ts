@@ -48,6 +48,8 @@ export type Database = {
           created_at: string
           date: string
           expense_type: string
+          golf_bet_amount: number | null
+          golf_bet_result: string
           golf_caddy_fee: number | null
           golf_green_fee: number | null
           golf_lesson_fee: number | null
@@ -66,6 +68,8 @@ export type Database = {
           created_at?: string
           date: string
           expense_type?: string
+          golf_bet_amount?: number | null
+          golf_bet_result?: string
           golf_caddy_fee?: number | null
           golf_green_fee?: number | null
           golf_lesson_fee?: number | null
@@ -84,6 +88,8 @@ export type Database = {
           created_at?: string
           date?: string
           expense_type?: string
+          golf_bet_amount?: number | null
+          golf_bet_result?: string
           golf_caddy_fee?: number | null
           golf_green_fee?: number | null
           golf_lesson_fee?: number | null

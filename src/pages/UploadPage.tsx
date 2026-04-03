@@ -3,6 +3,8 @@ import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, CheckCircle2, Image as ImageIcon, Sparkles, Loader2, AlertTriangle } from "lucide-react";
+import { fireConfetti } from "@/lib/confetti";
+import FortuneScoreCard from "@/components/FortuneScoreCard";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -163,6 +165,7 @@ export default function UploadPage() {
       }
 
       setStatus("done");
+      fireConfetti();
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["slips"] });
       toast.success(
@@ -283,6 +286,10 @@ export default function UploadPage() {
                   <ExtractedItem key={i} data={d} />
                 ))}
               </div>
+              {/* Fortune Score for last valid slip */}
+              {extractedData.filter(d => !d.skipped && d.ref_no).length > 0 && (
+                <FortuneScoreCard refNo={extractedData.filter(d => !d.skipped && d.ref_no).pop()!.ref_no} />
+              )}
             </div>
           )}
         </div>

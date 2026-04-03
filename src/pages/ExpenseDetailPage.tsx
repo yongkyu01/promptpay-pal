@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Pencil, Trash2, Share2, X, Calendar, Clock, User, Hash, FileText, Briefcase } from "lucide-react";
+import FortuneScoreCard from "@/components/FortuneScoreCard";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -221,6 +222,9 @@ export default function ExpenseDetailPage() {
             />
           </div>
         </div>
+
+        {/* Fortune Score */}
+        {refNo && <FortuneScoreCard refNo={refNo} />}
 
         {/* LINE Share Button */}
         <button

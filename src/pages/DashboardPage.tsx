@@ -15,7 +15,9 @@ import { startOfMonth, subMonths, format } from "date-fns";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import BudgetProgress from "@/components/dashboard/BudgetProgress";
 import GolfReport from "@/components/dashboard/GolfReport";
+import GolfBetTracker from "@/components/dashboard/GolfBetTracker";
 import ExportButton from "@/components/dashboard/ExportButton";
+import ShareCardButton from "@/components/ShareCard";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Period = "this" | "last" | "3months";
@@ -165,7 +167,15 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
-        <ExportButton expenses={expenses} />
+        <div className="flex items-center gap-2">
+          <ShareCardButton
+            totalSpending={totalSpending}
+            slipCount={expenses.length}
+            topCategory={categoryData[0] ? { name: categoryData[0].name, amount: categoryData[0].value } : undefined}
+            refNo={recentExpenses[0]?.ref_no ?? undefined}
+          />
+          <ExportButton expenses={expenses} />
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -261,6 +271,7 @@ export default function DashboardPage() {
 
       {/* Golf Report */}
       <GolfReport golfExpenses={golfExpenses as any} totalSpending={totalSpending} />
+      <GolfBetTracker golfExpenses={golfExpenses as any} />
 
       {/* Monthly Bar Chart */}
       <div className="rounded-2xl border border-border bg-card p-4">
