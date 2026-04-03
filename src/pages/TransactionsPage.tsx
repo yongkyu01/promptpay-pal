@@ -134,7 +134,7 @@ export default function TransactionsPage() {
                 : "bg-secondary text-muted-foreground"
             }`}
           >
-            {DATE_LABELS[p][lang]}
+            {t(p === "all" ? "all" : p === "week" ? "thisWeek" : p === "month" ? "thisMonth" : "custom", lang)}
           </button>
         ))}
       </div>
