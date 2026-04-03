@@ -121,7 +121,7 @@ export default function ManualEntryPage() {
         {/* Amount */}
         <div className="rounded-2xl border border-border bg-card p-5 text-center">
           <label className="mb-2 block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {lang === "th" ? "จำนวนเงิน (บาท)" : "Amount (THB)"}
+            {t("amount", lang)}
           </label>
           <div className="flex items-center justify-center gap-1">
             <span className="text-2xl font-bold text-muted-foreground">฿</span>
