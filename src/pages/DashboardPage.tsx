@@ -163,7 +163,7 @@ export default function DashboardPage() {
                   : "bg-secondary text-muted-foreground"
               }`}
             >
-              {PERIOD_LABELS[p][lang]}
+              {t(PERIOD_KEY[p], lang)}
             </button>
           ))}
         </div>
