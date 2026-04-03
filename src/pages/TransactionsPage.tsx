@@ -253,6 +253,14 @@ export default function TransactionsPage() {
           </div>
         </div>
       ))}
+
+      <ExpenseDetailSheet
+        expense={selectedExpense}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        lang={lang}
+        slipImageUrl={slipImageUrl}
+      />
     </div>
   );
 }
