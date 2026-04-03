@@ -180,7 +180,7 @@ export default function ManualEntryPage() {
         {/* Category */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "หมวดหมู่" : "Category"}
+            {t("category", lang)}
           </label>
           <div className="grid grid-cols-4 gap-2">
             {CATEGORIES.map((cat) => {
