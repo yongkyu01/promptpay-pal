@@ -4,9 +4,10 @@ import { getCategoryLabel, getCategoryColor, getCategoryIcon, type Category } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, Trash2, Share2, X, Calendar, Clock, User, Hash, FileText } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Share2, X, Calendar, Clock, User, Hash, FileText, Briefcase } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -103,6 +104,8 @@ export default function ExpenseDetailPage() {
   const Icon = getCategoryIcon(expense.category);
   const color = getCategoryColor(expense.category);
   const refNo = (expense as any).ref_no;
+  const expenseType = (expense as any).expense_type;
+  const { convert: toKRW } = useExchangeRate();
 
   return (
     <div className="mx-auto max-w-lg pb-24 animate-slide-up">
@@ -137,11 +140,20 @@ export default function ExpenseDetailPage() {
           <p className="mt-1 text-4xl font-extrabold text-primary-foreground tracking-tight">
             ฿{Number(expense.amount).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
           </p>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1">
-            <Icon className="h-4 w-4 text-primary-foreground" />
-            <span className="text-xs font-semibold text-primary-foreground">
-              {getCategoryLabel(expense.category as Category, lang)}
-            </span>
+          <p className="text-xs text-primary-foreground/50">≈ ₩{toKRW(Number(expense.amount)).toLocaleString()} KRW</p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1">
+              <Icon className="h-4 w-4 text-primary-foreground" />
+              <span className="text-xs font-semibold text-primary-foreground">
+                {getCategoryLabel(expense.category as Category, lang)}
+              </span>
+            </div>
+            {expenseType === "business" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1">
+                <Briefcase className="h-3 w-3 text-primary-foreground" />
+                <span className="text-xs font-semibold text-primary-foreground">BIZ</span>
+              </span>
+            )}
           </div>
         </div>
 

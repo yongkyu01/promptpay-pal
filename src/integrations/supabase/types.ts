@@ -14,12 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      budgets: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          monthly_limit: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          monthly_limit?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          monthly_limit?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
           category: string
           created_at: string
           date: string
+          expense_type: string
+          golf_caddy_fee: number | null
+          golf_green_fee: number | null
+          golf_lesson_fee: number | null
+          golf_tip: number | null
           id: string
           payment_method: string
           recipient: string
@@ -33,6 +65,11 @@ export type Database = {
           category?: string
           created_at?: string
           date: string
+          expense_type?: string
+          golf_caddy_fee?: number | null
+          golf_green_fee?: number | null
+          golf_lesson_fee?: number | null
+          golf_tip?: number | null
           id?: string
           payment_method?: string
           recipient: string
@@ -46,6 +83,11 @@ export type Database = {
           category?: string
           created_at?: string
           date?: string
+          expense_type?: string
+          golf_caddy_fee?: number | null
+          golf_green_fee?: number | null
+          golf_lesson_fee?: number | null
+          golf_tip?: number | null
           id?: string
           payment_method?: string
           recipient?: string
