@@ -22,10 +22,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Period = "this" | "last" | "3months";
 
-const PERIOD_LABELS: Record<Period, { th: string; en: string }> = {
-  this: { th: "เดือนนี้", en: "This Month" },
-  last: { th: "เดือนที่แล้ว", en: "Last Month" },
-  "3months": { th: "3 เดือน", en: "3 Months" },
+const PERIOD_KEY: Record<Period, "periodThis" | "periodLast" | "period3m"> = {
+  this: "periodThis",
+  last: "periodLast",
+  "3months": "period3m",
 };
 
 function getPeriodRange(period: Period) {
