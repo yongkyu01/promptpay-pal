@@ -276,7 +276,7 @@ export default function DashboardPage() {
       {/* Monthly Bar Chart */}
       <div className="rounded-2xl border border-border bg-card p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
-          {lang === "th" ? "รายจ่ายรายเดือน" : "Monthly Spending"}
+          {t("monthlySpending", lang)}
         </h2>
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
