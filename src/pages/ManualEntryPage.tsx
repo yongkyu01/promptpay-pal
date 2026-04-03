@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
+import { t } from "@/lib/i18n";
 
 const PAYMENT_METHODS = [
   { key: "promptpay", th: "พร้อมเพย์", en: "PromptPay" },
