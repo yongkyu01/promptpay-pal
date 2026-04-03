@@ -1,4 +1,4 @@
-import type { Category } from "./i18n";
+import type { Category } from "./categories";
 
 /**
  * mock_ai_processor
