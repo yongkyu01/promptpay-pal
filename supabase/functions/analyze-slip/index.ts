@@ -76,6 +76,7 @@ If is_valid_slip is false, still fill other fields with empty/zero values.`;
                     enum: ["food", "shopping", "transport", "golf", "bills", "cafe", "wellness", "grocery", "investment", "transfer", "travel", "other"],
                     description: "Expense category based on recipient",
                   },
+                  is_valid_slip: { type: "boolean", description: "Whether the image is a valid payment slip with readable QR code or reference number" },
                 },
                 required: ["amount", "date", "recipient", "ref_no", "category", "is_valid_slip"],
                 additionalProperties: false,
