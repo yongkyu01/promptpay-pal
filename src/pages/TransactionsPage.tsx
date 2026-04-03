@@ -112,7 +112,7 @@ export default function TransactionsPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={lang === "th" ? "ค้นหาชื่อร้านค้า..." : "Search by store name..."}
+          placeholder={t("search", lang)}
           className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         {search && (
