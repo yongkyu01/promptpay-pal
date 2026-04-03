@@ -11,6 +11,7 @@ import { startOfWeek, startOfMonth, format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 
 type DatePreset = "all" | "week" | "month" | "custom";
 
@@ -31,6 +32,23 @@ export default function TransactionsPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [slipImageUrl, setSlipImageUrl] = useState<string | null>(null);
+
+  const openDetail = async (exp: any) => {
+    setSelectedExpense(exp);
+    setDetailOpen(true);
+    setSlipImageUrl(null);
+    if (exp.slip_id) {
+      const { data: slip } = await supabase
+        .from("slips")
+        .select("image_url")
+        .eq("id", exp.slip_id)
+        .single();
+      if (slip?.image_url) setSlipImageUrl(slip.image_url);
+    }
+  };
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses", user?.id],
@@ -213,7 +231,7 @@ export default function TransactionsPage() {
               const Icon = getCategoryIcon(exp.category);
               const color = getCategoryColor(exp.category);
               return (
-                <div key={exp.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+                <button key={exp.id} onClick={() => openDetail(exp)} className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-3 text-left transition-colors active:bg-secondary">
                   <div className="flex items-center gap-3">
                     <div
                       className="flex h-9 w-9 items-center justify-center rounded-lg"
@@ -229,12 +247,20 @@ export default function TransactionsPage() {
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
       ))}
+
+      <ExpenseDetailSheet
+        expense={selectedExpense}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        lang={lang}
+        slipImageUrl={slipImageUrl}
+      />
     </div>
   );
 }
