@@ -25,14 +25,20 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a Thai PromptPay payment slip analyzer. Extract the following fields from the slip image:
+    const systemPrompt = `You are a Thai PromptPay payment slip analyzer. Your job is to:
+1. Verify if the image is a valid Thai bank payment/transfer slip (PromptPay, mobile banking, etc.)
+2. Check if there is a valid QR code or transaction reference visible on the slip
+3. Extract transaction data if valid
+
+Fields to extract:
 - amount: the transfer amount in THB (number only, no currency symbol)
 - date: the transaction date in YYYY-MM-DD format
 - recipient: the receiver/recipient name exactly as shown on the slip
 - ref_no: the reference number or transaction ID shown on the slip
 - category: classify based on recipient name into one of: food, shopping, transport, golf, bills, cafe, wellness, grocery, investment, transfer, travel, other
+- is_valid_slip: true if this is a genuine payment slip with readable transaction data and valid format, false if it's not a payment slip, is unreadable, or has no valid QR/reference
 
-Respond ONLY with the extracted data, nothing else.`;
+If is_valid_slip is false, still fill other fields with empty/zero values.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
