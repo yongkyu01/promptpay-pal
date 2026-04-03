@@ -68,6 +68,8 @@ export default function ManualEntryPage() {
         insertData.golf_caddy_fee = parseFloat(caddyFee) || 0;
         insertData.golf_tip = parseFloat(golfTip) || 0;
         insertData.golf_lesson_fee = parseFloat(lessonFee) || 0;
+        insertData.golf_bet_result = betResult;
+        insertData.golf_bet_amount = parseFloat(betAmount) || 0;
       }
 
       const { error } = await supabase.from("expenses").insert(insertData);
