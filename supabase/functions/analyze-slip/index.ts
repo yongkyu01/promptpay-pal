@@ -53,7 +53,7 @@ If is_valid_slip is false, still fill other fields with empty/zero values.`;
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this PromptPay payment slip and extract the data." },
+              { type: "text", text: "Analyze this image. First determine if it's a valid Thai payment slip with a QR code or reference number. Then extract the transaction data." },
               { type: "image_url", image_url: { url: imageUrl } },
             ],
           },
