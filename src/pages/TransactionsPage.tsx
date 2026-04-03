@@ -214,7 +214,7 @@ export default function TransactionsPage() {
               const Icon = getCategoryIcon(exp.category);
               const color = getCategoryColor(exp.category);
               return (
-                <button key={exp.id} onClick={() => openDetail(exp)} className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-3 text-left transition-colors active:bg-secondary">
+                <button key={exp.id} onClick={() => navigate(`/expense/${exp.id}`)} className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-3 text-left transition-colors active:bg-secondary">
                   <div className="flex items-center gap-3">
                     <div
                       className="flex h-9 w-9 items-center justify-center rounded-lg"
