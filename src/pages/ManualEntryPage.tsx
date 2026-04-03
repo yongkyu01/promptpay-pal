@@ -294,7 +294,7 @@ export default function ManualEntryPage() {
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {lang === "th" ? "กำลังบันทึก..." : "Saving..."}
+              {t("saving", lang)}
             </>
           ) : (
             lang === "th" ? "บันทึกรายจ่าย" : "Save Expense"
