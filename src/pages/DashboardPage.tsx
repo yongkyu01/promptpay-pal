@@ -211,7 +211,7 @@ export default function DashboardPage() {
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-secondary p-3">
-              <p className="text-[10px] text-muted-foreground">{lang === "th" ? "รายจ่ายธุรกิจ" : "Business Expenses"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("businessExpenses", lang)}</p>
               <p className="text-lg font-bold text-foreground">฿{Math.round(businessTotal).toLocaleString()}</p>
               <p className="text-[10px] text-muted-foreground">≈ ₩{toKRW(businessTotal).toLocaleString()}</p>
             </div>
