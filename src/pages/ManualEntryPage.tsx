@@ -108,9 +108,7 @@ export default function ManualEntryPage() {
                 <User className="h-4 w-4 text-muted-foreground" />
               )}
               <span className="text-sm font-medium text-foreground">
-                {expenseType === "business"
-                  ? (lang === "th" ? "ค่าใช้จ่ายธุรกิจ" : "Business Expense")
-                  : (lang === "th" ? "ค่าใช้จ่ายส่วนตัว" : "Personal Expense")}
+                {expenseType === "business" ? t("businessExpense", lang) : t("personalExpense", lang)}
               </span>
             </div>
             <Switch
