@@ -191,7 +191,7 @@ export default function DashboardPage() {
           <p className="text-[10px] text-primary-foreground/50">
             ≈ ₩{toKRW(totalSpending).toLocaleString()} KRW
           </p>
-          <p className="text-xs text-primary-foreground/60">{PERIOD_LABELS[period][lang]}</p>
+          <p className="text-xs text-primary-foreground/60">{t(PERIOD_KEY[period], lang)}</p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-center gap-1.5 text-muted-foreground">
