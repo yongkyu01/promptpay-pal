@@ -66,7 +66,7 @@ export default function ExpenseDetailPage() {
       toast.success(t("deleteSuccess", lang));
       navigate(-1);
     } catch {
-      toast.error(lang === "th" ? "ลบไม่สำเร็จ" : "Failed to delete");
+      toast.error(t("deleteFailed", lang));
     }
   };
 
