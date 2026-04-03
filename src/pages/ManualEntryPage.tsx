@@ -77,7 +77,7 @@ export default function ManualEntryPage() {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success(lang === "th" ? "บันทึกสำเร็จ!" : "Saved successfully!");
+      toast.success(t("savedSuccess", lang));
       navigate("/");
     } catch (err: any) {
       toast.error(err.message || "Save failed");
