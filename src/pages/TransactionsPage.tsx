@@ -225,13 +225,21 @@ export default function TransactionsPage() {
                       <Icon className="h-4 w-4" style={{ color }} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">{exp.recipient}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-foreground">{exp.recipient}</p>
+                        {(exp as any).expense_type === "business" && (
+                          <span className="rounded bg-primary/10 px-1 py-0.5 text-[8px] font-bold text-primary">BIZ</span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {exp.time} · {getCategoryLabel(exp.category as Category, lang)}
                       </p>
                     </div>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
+                    <p className="text-[10px] text-muted-foreground">≈₩{toKRW(Number(exp.amount)).toLocaleString()}</p>
+                  </div>
                 </button>
               );
             })}
