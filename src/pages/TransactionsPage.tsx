@@ -11,6 +11,7 @@ import { startOfWeek, startOfMonth, format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 
 type DatePreset = "all" | "week" | "month" | "custom";
 
