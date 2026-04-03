@@ -162,7 +162,7 @@ export default function ManualEntryPage() {
         {/* Date */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "วันที่" : "Date"}
+            {t("date", lang)}
           </label>
           <Popover>
             <PopoverTrigger asChild>
