@@ -4,6 +4,7 @@ import { getCategoryLabel, getCategoryColor, getCategoryIcon, type Category } fr
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { Settings } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 interface BudgetProgressProps {
   expenses: { category: string; amount: number }[];
@@ -19,7 +20,7 @@ export default function BudgetProgress({ expenses }: BudgetProgressProps) {
       <div className="rounded-2xl border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-foreground">
-            {lang === "th" ? "งบประมาณ" : "Budget"}
+            {t("monthlyBudget", lang)}
           </h2>
           <button onClick={() => navigate("/budgets")} className="text-xs text-primary font-medium">
             <Settings className="h-4 w-4" />
@@ -29,27 +30,25 @@ export default function BudgetProgress({ expenses }: BudgetProgressProps) {
           onClick={() => navigate("/budgets")}
           className="w-full rounded-xl border-2 border-dashed border-border py-4 text-xs text-muted-foreground hover:border-primary/50 transition-colors"
         >
-          {lang === "th" ? "ตั้งค่างบประมาณรายเดือน" : "Set monthly budget"}
+          {t("setBudget", lang)}
         </button>
       </div>
     );
   }
 
-  // Calculate spending per category
   const spendingMap = new Map<string, number>();
   expenses.forEach((e) => {
     const cat = e.category || "other";
     spendingMap.set(cat, (spendingMap.get(cat) || 0) + Number(e.amount));
   });
 
-  // Find insights
   const insights: string[] = [];
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-foreground">
-          {lang === "th" ? "งบประมาณเดือนนี้" : "Monthly Budget"}
+          {t("monthlyBudget", lang)}
         </h2>
         <button onClick={() => navigate("/budgets")} className="text-xs text-primary font-medium">
           <Settings className="h-4 w-4" />
@@ -67,16 +66,12 @@ export default function BudgetProgress({ expenses }: BudgetProgressProps) {
 
           if (isWarning && !isOver) {
             insights.push(
-              lang === "th"
-                ? `⚠️ ${getCategoryLabel(b.category as Category, lang)} ใช้ไป ${Math.round(pct)}% ของงบประมาณแล้ว!`
-                : `⚠️ ${getCategoryLabel(b.category as Category, lang)} is at ${Math.round(pct)}% of budget!`
+              `⚠️ ${getCategoryLabel(b.category as Category, lang)} ${Math.round(pct)}% ${t("budgetWarning90", lang)}`
             );
           }
           if (isOver) {
             insights.push(
-              lang === "th"
-                ? `🚨 ${getCategoryLabel(b.category as Category, lang)} เกินงบประมาณแล้ว!`
-                : `🚨 ${getCategoryLabel(b.category as Category, lang)} exceeded budget!`
+              `🚨 ${getCategoryLabel(b.category as Category, lang)} — ${t("budgetWarning90", lang)}`
             );
           }
 
