@@ -48,7 +48,7 @@ export default function ManualEntryPage() {
     if (!user) return;
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
-      toast.error(lang === "th" ? "กรุณาใส่จำนวนเงิน" : "Please enter an amount");
+      toast.error(t("enterAmount", lang));
       return;
     }
 
