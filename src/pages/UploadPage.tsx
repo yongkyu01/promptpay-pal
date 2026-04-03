@@ -3,6 +3,8 @@ import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, CheckCircle2, Image as ImageIcon, Sparkles, Loader2, AlertTriangle } from "lucide-react";
+import { fireConfetti } from "@/lib/confetti";
+import FortuneScoreCard from "@/components/FortuneScoreCard";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
