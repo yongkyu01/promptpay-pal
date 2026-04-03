@@ -140,7 +140,7 @@ export default function ManualEntryPage() {
         {/* Payment Method */}
         <div>
           <label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            {lang === "th" ? "วิธีชำระเงิน" : "Payment Method"}
+            {t("paymentMethod", lang)}
           </label>
           <div className="flex gap-2">
             {PAYMENT_METHODS.map((pm) => (
