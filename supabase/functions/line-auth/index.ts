@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   if (action === "login") {
     const redirectUri = url.searchParams.get("redirect_uri") || url.origin + "/line-auth?action=callback";
     const appRedirect = url.searchParams.get("app_redirect") || "";
-    
+
     const state = btoa(JSON.stringify({ redirect_uri: redirectUri, app_redirect: appRedirect }));
 
     const lineUrl = new URL(LINE_AUTH_URL);
@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok) {
+      console.error("LINE token exchange failed:", tokenData);
       return new Response(JSON.stringify({ error: "LINE token exchange failed", details: tokenData }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     const profile = await profileRes.json();
+    console.log("LINE profile:", JSON.stringify(profile));
 
     // Create or sign in user via Supabase Admin
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -103,7 +105,6 @@ Deno.serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      // Update metadata
       await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           line_user_id: profile.userId,
@@ -113,7 +114,6 @@ Deno.serve(async (req) => {
         },
       });
     } else {
-      // Create new user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         email_confirm: true,
@@ -126,6 +126,7 @@ Deno.serve(async (req) => {
       });
 
       if (createError || !newUser.user) {
+        console.error("Failed to create user:", createError);
         return new Response(JSON.stringify({ error: "Failed to create user", details: createError }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -133,7 +134,6 @@ Deno.serve(async (req) => {
       }
       userId = newUser.user.id;
 
-      // Create profile
       await supabaseAdmin.from("profiles").insert({
         user_id: userId,
         display_name: profile.displayName,
@@ -141,28 +141,42 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate session token
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+    // Generate magic link - redirect to the action_link directly
+    // Supabase will verify the token and redirect to the app with session tokens
+    const appRedirect = stateData.app_redirect || "https://promptpay-buddy.lovable.app";
+
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email,
+      options: {
+        redirectTo: appRedirect,
+      },
     });
 
-    if (sessionError || !sessionData) {
+    if (linkError || !linkData) {
+      console.error("Failed to generate link:", linkError);
       return new Response(JSON.stringify({ error: "Failed to generate session" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Redirect back to app with the magic link token
-    const appRedirect = stateData.app_redirect || SUPABASE_URL.replace(".supabase.co", ".lovable.app");
-    const hashParams = new URL(sessionData.properties?.action_link || "").hash;
-    
-    const finalRedirect = `${appRedirect}${hashParams}`;
+    // The action_link is a Supabase verify URL that will:
+    // 1. Verify the magic link token
+    // 2. Redirect to redirectTo with access_token & refresh_token in the URL hash
+    const actionLink = linkData.properties?.action_link;
+    console.log("Redirecting to action_link:", actionLink);
+
+    if (!actionLink) {
+      return new Response(JSON.stringify({ error: "No action link generated" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(null, {
       status: 302,
-      headers: { ...corsHeaders, Location: finalRedirect },
+      headers: { ...corsHeaders, Location: actionLink },
     });
   }
 
