@@ -15,12 +15,6 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 type DatePreset = "all" | "week" | "month" | "custom";
 
-const DATE_LABELS: Record<DatePreset, { th: string; en: string }> = {
-  all: { th: "ทั้งหมด", en: "All" },
-  week: { th: "สัปดาห์นี้", en: "This Week" },
-  month: { th: "เดือนนี้", en: "This Month" },
-  custom: { th: "เลือกเอง", en: "Custom" },
-};
 
 export default function TransactionsPage() {
   const { lang } = useApp();
