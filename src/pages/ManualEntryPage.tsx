@@ -5,12 +5,13 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, CalendarIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Loader2, Briefcase, User } from "lucide-react";
 import { CATEGORIES, CATEGORY_MAP, type Category } from "@/lib/categories";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Switch } from "@/components/ui/switch";
 
 const PAYMENT_METHODS = [
   { key: "promptpay", th: "พร้อมเพย์", en: "PromptPay" },
@@ -30,6 +31,13 @@ export default function ManualEntryPage() {
   const [category, setCategory] = useState<Category>("other");
   const [memo, setMemo] = useState("");
   const [saving, setSaving] = useState(false);
+  const [expenseType, setExpenseType] = useState<"personal" | "business">("personal");
+
+  // Golf sub-fields
+  const [greenFee, setGreenFee] = useState("");
+  const [caddyFee, setCaddyFee] = useState("");
+  const [golfTip, setGolfTip] = useState("");
+  const [lessonFee, setLessonFee] = useState("");
 
   const handleSave = async () => {
     if (!user) return;
@@ -41,15 +49,24 @@ export default function ManualEntryPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from("expenses").insert({
+      const insertData: any = {
         user_id: user.id,
         amount: numAmount,
         recipient: memo.trim() || (lang === "th" ? "บันทึกเอง" : "Manual entry"),
         category,
         date: format(date, "yyyy-MM-dd"),
         payment_method: paymentMethod,
-      } as any);
+        expense_type: expenseType,
+      };
 
+      if (category === "golf") {
+        insertData.golf_green_fee = parseFloat(greenFee) || 0;
+        insertData.golf_caddy_fee = parseFloat(caddyFee) || 0;
+        insertData.golf_tip = parseFloat(golfTip) || 0;
+        insertData.golf_lesson_fee = parseFloat(lessonFee) || 0;
+      }
+
+      const { error } = await supabase.from("expenses").insert(insertData);
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
@@ -64,7 +81,6 @@ export default function ManualEntryPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4 pb-24 animate-slide-up">
-      {/* Header */}
       <div className="mb-6 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="rounded-xl bg-secondary p-2">
           <ArrowLeft className="h-5 w-5 text-foreground" />
@@ -75,6 +91,28 @@ export default function ManualEntryPage() {
       </div>
 
       <div className="space-y-5">
+        {/* Expense Type Toggle */}
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {expenseType === "business" ? (
+                <Briefcase className="h-4 w-4 text-primary" />
+              ) : (
+                <User className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm font-medium text-foreground">
+                {expenseType === "business"
+                  ? (lang === "th" ? "ค่าใช้จ่ายธุรกิจ" : "Business Expense")
+                  : (lang === "th" ? "ค่าใช้จ่ายส่วนตัว" : "Personal Expense")}
+              </span>
+            </div>
+            <Switch
+              checked={expenseType === "business"}
+              onCheckedChange={(checked) => setExpenseType(checked ? "business" : "personal")}
+            />
+          </div>
+        </div>
+
         {/* Amount */}
         <div className="rounded-2xl border border-border bg-card p-5 text-center">
           <label className="mb-2 block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -129,13 +167,7 @@ export default function ManualEntryPage() {
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(d) => d && setDate(d)}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
+              <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
         </div>
@@ -155,9 +187,7 @@ export default function ManualEntryPage() {
                   key={cat}
                   onClick={() => setCategory(cat)}
                   className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-[10px] font-medium transition-all ${
-                    active
-                      ? "ring-2 ring-primary bg-primary/10 text-foreground"
-                      : "bg-secondary text-muted-foreground"
+                    active ? "ring-2 ring-primary bg-primary/10 text-foreground" : "bg-secondary text-muted-foreground"
                   }`}
                 >
                   <Icon className="h-5 w-5" style={{ color: cfg.color }} />
@@ -167,6 +197,33 @@ export default function ManualEntryPage() {
             })}
           </div>
         </div>
+
+        {/* Golf Sub-fields */}
+        {category === "golf" && (
+          <div className="rounded-2xl border-2 border-green-500/30 bg-green-50/5 p-4 space-y-3">
+            <p className="text-xs font-semibold text-green-600">
+              {lang === "th" ? "รายละเอียดกอล์ฟ" : "Golf Details"}
+            </p>
+            {[
+              { label: lang === "th" ? "กรีนฟี" : "Green Fee", value: greenFee, set: setGreenFee },
+              { label: lang === "th" ? "แคดดี้" : "Caddy Fee", value: caddyFee, set: setCaddyFee },
+              { label: lang === "th" ? "ทิป" : "Tips", value: golfTip, set: setGolfTip },
+              { label: lang === "th" ? "เรียนกอล์ฟ" : "Lesson Fee", value: lessonFee, set: setLessonFee },
+            ].map((f) => (
+              <div key={f.label} className="flex items-center gap-3">
+                <span className="w-20 text-xs text-muted-foreground">{f.label}</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={f.value}
+                  onChange={(e) => f.set(e.target.value)}
+                  placeholder="0"
+                  className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground text-right outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Memo */}
         <div>

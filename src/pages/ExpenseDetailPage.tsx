@@ -104,6 +104,8 @@ export default function ExpenseDetailPage() {
   const Icon = getCategoryIcon(expense.category);
   const color = getCategoryColor(expense.category);
   const refNo = (expense as any).ref_no;
+  const expenseType = (expense as any).expense_type;
+  const { convert: toKRW } = useExchangeRate();
 
   return (
     <div className="mx-auto max-w-lg pb-24 animate-slide-up">
