@@ -5,12 +5,13 @@ import { getCategoryLabel, getCategoryColor, getCategoryIcon, type Category } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { X, Search, CalendarIcon } from "lucide-react";
+import { X, Search, CalendarIcon, Briefcase } from "lucide-react";
 import { useState, useMemo } from "react";
 import { startOfWeek, startOfMonth, format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 type DatePreset = "all" | "week" | "month" | "custom";
 
