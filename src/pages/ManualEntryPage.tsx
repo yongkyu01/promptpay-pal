@@ -297,7 +297,7 @@ export default function ManualEntryPage() {
               {t("saving", lang)}
             </>
           ) : (
-            lang === "th" ? "บันทึกรายจ่าย" : "Save Expense"
+            t("saveExpense", lang)
           )}
         </button>
       </div>
