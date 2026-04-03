@@ -1,12 +1,17 @@
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { t, CATEGORY_COLORS, type Category } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { getCategoryLabel, getCategoryColor, getCategoryIcon, CATEGORIES, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { X } from "lucide-react";
 
 export default function TransactionsPage() {
   const { lang } = useApp();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryFilter = searchParams.get("category");
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses", user?.id],
@@ -21,7 +26,11 @@ export default function TransactionsPage() {
     enabled: !!user,
   });
 
-  const grouped = expenses.reduce<Record<string, typeof expenses>>((acc, e) => {
+  const filtered = categoryFilter
+    ? expenses.filter((e) => e.category === categoryFilter)
+    : expenses;
+
+  const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, e) => {
     (acc[e.date] ??= []).push(e);
     return acc;
   }, {});
@@ -30,7 +39,19 @@ export default function TransactionsPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 px-4 py-4 pb-24 animate-slide-up">
-      <h2 className="text-lg font-bold text-foreground">{t("transactions", lang)}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-foreground">{t("transactions", lang)}</h2>
+        {categoryFilter && (
+          <button
+            onClick={() => setSearchParams({})}
+            className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-primary-foreground"
+            style={{ background: getCategoryColor(categoryFilter) }}
+          >
+            {getCategoryLabel(categoryFilter as Category, lang)}
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
 
       {sortedDates.length === 0 && (
         <p className="py-12 text-center text-sm text-muted-foreground">{t("noSlips", lang)}</p>
@@ -40,25 +61,29 @@ export default function TransactionsPage() {
         <div key={date}>
           <p className="mb-2 text-xs font-semibold text-muted-foreground">{date}</p>
           <div className="space-y-2">
-            {grouped[date].map((exp) => (
-              <div key={exp.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-lg"
-                    style={{ background: (CATEGORY_COLORS[exp.category as Category] || CATEGORY_COLORS.other) + "18" }}
-                  >
-                    <div className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY_COLORS[exp.category as Category] || CATEGORY_COLORS.other }} />
+            {grouped[date].map((exp) => {
+              const Icon = getCategoryIcon(exp.category);
+              const color = getCategoryColor(exp.category);
+              return (
+                <div key={exp.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-lg"
+                      style={{ background: color + "18" }}
+                    >
+                      <Icon className="h-4 w-4" style={{ color }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{exp.recipient}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {exp.time} · {getCategoryLabel(exp.category as Category, lang)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{exp.recipient}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {exp.time} · {t((exp.category as Category) as any, lang)}
-                    </p>
-                  </div>
+                  <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
                 </div>
-                <span className="text-sm font-semibold text-foreground">-฿{Number(exp.amount).toLocaleString()}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

@@ -1,4 +1,4 @@
-import type { Category } from "./i18n";
+import type { Category } from "./categories";
 
 /**
  * mock_ai_processor
@@ -17,8 +17,8 @@ export async function mockAiProcessor(
     { recipient: "7-Eleven สาขาสยาม", amount: 85.00, date: "2025-03-26", time: "09:12", category: "food" },
     { recipient: "Grab Thailand", amount: 247.00, date: "2025-03-26", time: "14:30", category: "transport" },
     { recipient: "Shopee Payment", amount: 1299.00, date: "2025-03-25", time: "20:05", category: "shopping" },
-    { recipient: "การไฟฟ้านครหลวง", amount: 890.00, date: "2025-03-24", time: "10:00", category: "utilities" },
-    { recipient: "Netflix Thailand", amount: 349.00, date: "2025-03-23", time: "00:01", category: "entertainment" },
+    { recipient: "การไฟฟ้านครหลวง", amount: 890.00, date: "2025-03-24", time: "10:00", category: "bills" },
+    { recipient: "Netflix Thailand", amount: 349.00, date: "2025-03-23", time: "00:01", category: "other" },
     { recipient: "BTS Skytrain", amount: 44.00, date: "2025-03-22", time: "08:15", category: "transport" },
     { recipient: "Lazada Payment", amount: 650.00, date: "2025-03-21", time: "16:40", category: "shopping" },
   ];

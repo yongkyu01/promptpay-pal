@@ -16,12 +16,6 @@ const translations = {
   selectImages: { th: "เลือกรูปภาพ", en: "Select Images" },
   analyzing: { th: "กำลังวิเคราะห์...", en: "Analyzing..." },
   analysisComplete: { th: "วิเคราะห์เสร็จแล้ว", en: "Analysis Complete" },
-  food: { th: "อาหาร", en: "Food" },
-  transport: { th: "ค่าเดินทาง", en: "Transport" },
-  shopping: { th: "ช้อปปิ้ง", en: "Shopping" },
-  utilities: { th: "ค่าน้ำค่าไฟ", en: "Utilities" },
-  entertainment: { th: "บันเทิง", en: "Entertainment" },
-  other: { th: "อื่นๆ", en: "Other" },
   readyToClean: { th: "พร้อมลบ", en: "Ready to Clean" },
   cleanupDesc: { th: "สลิปที่วิเคราะห์แล้ว สามารถลบออกได้", en: "Analyzed slips ready for deletion" },
   deleteSelected: { th: "ลบที่เลือก", en: "Delete Selected" },
@@ -38,15 +32,3 @@ export type TranslationKey = keyof typeof translations;
 export function t(key: TranslationKey, lang: Lang): string {
   return translations[key]?.[lang] ?? key;
 }
-
-export const CATEGORIES = ["food", "transport", "shopping", "utilities", "entertainment", "other"] as const;
-export type Category = typeof CATEGORIES[number];
-
-export const CATEGORY_COLORS: Record<Category, string> = {
-  food: "#F97316",
-  transport: "#3B82F6",
-  shopping: "#EC4899",
-  utilities: "#10B981",
-  entertainment: "#8B5CF6",
-  other: "#6B7280",
-};

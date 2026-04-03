@@ -30,7 +30,7 @@ serve(async (req) => {
 - date: the transaction date in YYYY-MM-DD format
 - recipient: the receiver/recipient name exactly as shown on the slip
 - ref_no: the reference number or transaction ID shown on the slip
-- category: classify based on recipient name into one of: food, transport, shopping, utilities, entertainment, health, education, other
+- category: classify based on recipient name into one of: food, shopping, transport, golf, bills, cafe, wellness, grocery, investment, transfer, travel, other
 
 Respond ONLY with the extracted data, nothing else.`;
 
@@ -67,7 +67,7 @@ Respond ONLY with the extracted data, nothing else.`;
                   ref_no: { type: "string", description: "Reference number or transaction ID" },
                   category: {
                     type: "string",
-                    enum: ["food", "transport", "shopping", "utilities", "entertainment", "health", "education", "other"],
+                    enum: ["food", "shopping", "transport", "golf", "bills", "cafe", "wellness", "grocery", "investment", "transfer", "travel", "other"],
                     description: "Expense category based on recipient",
                   },
                 },
