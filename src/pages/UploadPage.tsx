@@ -1,12 +1,19 @@
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
-import { mockAiProcessor } from "@/lib/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, CheckCircle2, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+
+interface ExtractedSlipData {
+  recipient: string;
+  amount: number;
+  date: string;
+  ref_no: string;
+  category: string;
+}
 
 export default function UploadPage() {
   const { lang } = useApp();
@@ -15,7 +22,7 @@ export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<"idle" | "uploading" | "analyzing" | "done">("idle");
   const [extracted, setExtracted] = useState(0);
-  const [extractedData, setExtractedData] = useState<Array<{ recipient: string; amount: number }>>([]);
+  const [extractedData, setExtractedData] = useState<ExtractedSlipData[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +43,7 @@ export default function UploadPage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // 1. Upload image to Supabase Storage
+        // 1. Upload image to Storage
         const filePath = `${user.id}/${Date.now()}-${i}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("slips")
@@ -64,8 +71,13 @@ export default function UploadPage() {
 
         setStatus("analyzing");
 
-        // 3. Run mock AI processor
-        const aiResult = await mockAiProcessor(file, i);
+        // 3. Call AI analyze-slip edge function
+        const { data: aiResult, error: fnError } = await supabase.functions.invoke("analyze-slip", {
+          body: { imageUrl: urlData.publicUrl },
+        });
+
+        if (fnError) throw new Error(fnError.message || "AI analysis failed");
+        if (aiResult?.error) throw new Error(aiResult.error);
 
         // 4. Insert into expenses table
         const { error: expenseError } = await supabase
@@ -77,8 +89,8 @@ export default function UploadPage() {
             recipient: aiResult.recipient,
             category: aiResult.category,
             date: aiResult.date,
-            time: aiResult.time,
-          });
+            ref_no: aiResult.ref_no,
+          } as any);
 
         if (expenseError) throw expenseError;
 
@@ -89,11 +101,19 @@ export default function UploadPage() {
           .eq("id", slipData.id);
 
         setExtracted(i + 1);
-        setExtractedData((prev) => [...prev, { recipient: aiResult.recipient, amount: aiResult.amount }]);
+        setExtractedData((prev) => [
+          ...prev,
+          {
+            recipient: aiResult.recipient,
+            amount: aiResult.amount,
+            date: aiResult.date,
+            ref_no: aiResult.ref_no,
+            category: aiResult.category,
+          },
+        ]);
       }
 
       setStatus("done");
-      // Invalidate queries so Dashboard/Transactions/Cleanup refresh
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["slips"] });
       toast.success(
@@ -165,6 +185,17 @@ export default function UploadPage() {
 
           {(status === "uploading" || status === "analyzing") && (
             <div className="space-y-3">
+              {/* AI Analyzing Animation */}
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="relative flex h-12 w-12 items-center justify-center">
+                  <div className="absolute inset-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  {lang === "th" ? "AI กำลังวิเคราะห์สลิป..." : "AI is analyzing your slips..."}
+                </p>
+              </div>
+
               <div className="h-2 overflow-hidden rounded-full bg-secondary">
                 <div
                   className="h-full rounded-full gradient-primary transition-all duration-500"
@@ -181,13 +212,11 @@ export default function UploadPage() {
                   <>{t("analyzing", lang)} {extracted}/{files.length}</>
                 )}
               </p>
+
               {extractedData.length > 0 && (
                 <div className="space-y-1.5">
                   {extractedData.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between rounded-lg bg-purple-light px-3 py-2 animate-slide-up">
-                      <span className="text-xs font-medium text-foreground truncate mr-2">{d.recipient}</span>
-                      <span className="text-xs font-semibold text-primary whitespace-nowrap">฿{d.amount.toLocaleString()}</span>
-                    </div>
+                    <ExtractedItem key={i} data={d} />
                   ))}
                 </div>
               )}
@@ -202,16 +231,28 @@ export default function UploadPage() {
               </div>
               <div className="space-y-1.5">
                 {extractedData.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg bg-purple-light px-3 py-2">
-                    <span className="text-xs font-medium text-foreground truncate mr-2">{d.recipient}</span>
-                    <span className="text-xs font-semibold text-primary whitespace-nowrap">฿{d.amount.toLocaleString()}</span>
-                  </div>
+                  <ExtractedItem key={i} data={d} />
                 ))}
               </div>
             </div>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ExtractedItem({ data }: { data: ExtractedSlipData }) {
+  return (
+    <div className="rounded-lg bg-purple-light px-3 py-2 animate-slide-up space-y-0.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground truncate mr-2">{data.recipient}</span>
+        <span className="text-xs font-semibold text-primary whitespace-nowrap">฿{data.amount.toLocaleString()}</span>
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>{data.date}</span>
+        <span>Ref: {data.ref_no}</span>
+      </div>
     </div>
   );
 }
