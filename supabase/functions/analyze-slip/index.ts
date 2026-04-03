@@ -77,7 +77,7 @@ If is_valid_slip is false, still fill other fields with empty/zero values.`;
                     description: "Expense category based on recipient",
                   },
                 },
-                required: ["amount", "date", "recipient", "ref_no", "category"],
+                required: ["amount", "date", "recipient", "ref_no", "category", "is_valid_slip"],
                 additionalProperties: false,
               },
             },
