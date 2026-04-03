@@ -2,7 +2,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, CheckCircle2, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
+import { Upload, CheckCircle2, Image as ImageIcon, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,9 @@ interface ExtractedSlipData {
   date: string;
   ref_no: string;
   category: string;
+  is_valid_slip: boolean;
+  skipped?: boolean;
+  skip_reason?: string;
 }
 
 export default function UploadPage() {
@@ -79,7 +82,52 @@ export default function UploadPage() {
         if (fnError) throw new Error(fnError.message || "AI analysis failed");
         if (aiResult?.error) throw new Error(aiResult.error);
 
-        // 4. Insert into expenses table
+        // 3.5 Validate QR / slip format
+        if (!aiResult.is_valid_slip) {
+          toast.warning(
+            lang === "th"
+              ? `สลิปที่ ${i + 1} ไม่ใช่สลิปที่ถูกต้อง — ข้ามไป`
+              : `Slip ${i + 1} is not a valid payment slip — skipped`
+          );
+          // Clean up uploaded file
+          await supabase.storage.from("slips").remove([filePath]);
+          await supabase.from("slips").delete().eq("id", slipData.id);
+          setExtracted(i + 1);
+          setExtractedData((prev) => [
+            ...prev,
+            { ...aiResult, skipped: true, skip_reason: lang === "th" ? "สลิปไม่ถูกต้อง" : "Invalid slip" },
+          ]);
+          continue;
+        }
+
+        // 4. Check duplicate ref_no
+        if (aiResult.ref_no) {
+          const { data: existing } = await supabase
+            .from("expenses")
+            .select("id")
+            .eq("ref_no", aiResult.ref_no)
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            toast.warning(
+              lang === "th"
+                ? `สลิปที่ ${i + 1} ซ้ำ (Ref: ${aiResult.ref_no}) — อยู่ในระบบแล้ว`
+                : `Slip ${i + 1} is a duplicate (Ref: ${aiResult.ref_no}) — already exists`
+            );
+            // Clean up
+            await supabase.storage.from("slips").remove([filePath]);
+            await supabase.from("slips").delete().eq("id", slipData.id);
+            setExtracted(i + 1);
+            setExtractedData((prev) => [
+              ...prev,
+              { ...aiResult, skipped: true, skip_reason: lang === "th" ? "สลิปซ้ำ" : "Duplicate" },
+            ]);
+            continue;
+          }
+        }
+
+        // 5. Insert into expenses table
         const { error: expenseError } = await supabase
           .from("expenses")
           .insert({
@@ -94,7 +142,7 @@ export default function UploadPage() {
 
         if (expenseError) throw expenseError;
 
-        // 5. Mark slip as processed
+        // 6. Mark slip as processed
         await supabase
           .from("slips")
           .update({ is_processed: true })
@@ -109,6 +157,7 @@ export default function UploadPage() {
             date: aiResult.date,
             ref_no: aiResult.ref_no,
             category: aiResult.category,
+            is_valid_slip: true,
           },
         ]);
       }
@@ -243,6 +292,20 @@ export default function UploadPage() {
 }
 
 function ExtractedItem({ data }: { data: ExtractedSlipData }) {
+  if (data.skipped) {
+    return (
+      <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 animate-slide-up">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
+          <span className="text-xs font-medium text-destructive">{data.skip_reason}</span>
+          {data.ref_no && (
+            <span className="ml-auto text-[10px] text-muted-foreground">Ref: {data.ref_no}</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg bg-purple-light px-3 py-2 animate-slide-up space-y-0.5">
       <div className="flex items-center justify-between">

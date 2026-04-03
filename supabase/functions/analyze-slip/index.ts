@@ -25,14 +25,20 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a Thai PromptPay payment slip analyzer. Extract the following fields from the slip image:
+    const systemPrompt = `You are a Thai PromptPay payment slip analyzer. Your job is to:
+1. Verify if the image is a valid Thai bank payment/transfer slip (PromptPay, mobile banking, etc.)
+2. Check if there is a valid QR code or transaction reference visible on the slip
+3. Extract transaction data if valid
+
+Fields to extract:
 - amount: the transfer amount in THB (number only, no currency symbol)
 - date: the transaction date in YYYY-MM-DD format
 - recipient: the receiver/recipient name exactly as shown on the slip
 - ref_no: the reference number or transaction ID shown on the slip
 - category: classify based on recipient name into one of: food, shopping, transport, golf, bills, cafe, wellness, grocery, investment, transfer, travel, other
+- is_valid_slip: true if this is a genuine payment slip with readable transaction data and valid format, false if it's not a payment slip, is unreadable, or has no valid QR/reference
 
-Respond ONLY with the extracted data, nothing else.`;
+If is_valid_slip is false, still fill other fields with empty/zero values.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -47,7 +53,7 @@ Respond ONLY with the extracted data, nothing else.`;
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this PromptPay payment slip and extract the data." },
+              { type: "text", text: "Analyze this image. First determine if it's a valid Thai payment slip with a QR code or reference number. Then extract the transaction data." },
               { type: "image_url", image_url: { url: imageUrl } },
             ],
           },
@@ -70,8 +76,9 @@ Respond ONLY with the extracted data, nothing else.`;
                     enum: ["food", "shopping", "transport", "golf", "bills", "cafe", "wellness", "grocery", "investment", "transfer", "travel", "other"],
                     description: "Expense category based on recipient",
                   },
+                  is_valid_slip: { type: "boolean", description: "Whether the image is a valid payment slip with readable QR code or reference number" },
                 },
-                required: ["amount", "date", "recipient", "ref_no", "category"],
+                required: ["amount", "date", "recipient", "ref_no", "category", "is_valid_slip"],
                 additionalProperties: false,
               },
             },
