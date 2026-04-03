@@ -280,7 +280,7 @@ export default function ManualEntryPage() {
             type="text"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            placeholder={lang === "th" ? "เช่น ข้าวมันไก่, Grab..." : "e.g. Lunch, Grab..."}
+            placeholder={t("memoPlaceholder", lang)}
             className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
