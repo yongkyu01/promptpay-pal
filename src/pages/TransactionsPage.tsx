@@ -4,7 +4,7 @@ import { t } from "@/lib/i18n";
 import { getCategoryLabel, getCategoryColor, getCategoryIcon, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { X, Search, CalendarIcon } from "lucide-react";
 import { useState, useMemo } from "react";
 import { startOfWeek, startOfMonth, format } from "date-fns";
