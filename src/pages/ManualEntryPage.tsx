@@ -207,7 +207,7 @@ export default function ManualEntryPage() {
         {category === "golf" && (
           <div className="rounded-2xl border-2 border-green-500/30 bg-green-50/5 p-4 space-y-3">
             <p className="text-xs font-semibold text-green-600">
-              {lang === "th" ? "รายละเอียดกอล์ฟ" : "Golf Details"}
+              {t("golfDetails", lang)}
             </p>
             {[
               { label: lang === "th" ? "กรีนฟี" : "Green Fee", value: greenFee, set: setGreenFee },
