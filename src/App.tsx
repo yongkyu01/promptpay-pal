@@ -12,6 +12,7 @@ import TransactionsPage from "@/pages/TransactionsPage";
 import CleanupPage from "@/pages/CleanupPage";
 import ExpenseDetailPage from "@/pages/ExpenseDetailPage";
 import ManualEntryPage from "@/pages/ManualEntryPage";
+import BudgetSettingsPage from "@/pages/BudgetSettingsPage";
 import AuthPage from "@/pages/AuthPage";
 import AddExpenseFAB from "@/components/AddExpenseFAB";
 import NotFound from "./pages/NotFound.tsx";
