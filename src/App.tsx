@@ -11,7 +11,9 @@ import UploadPage from "@/pages/UploadPage";
 import TransactionsPage from "@/pages/TransactionsPage";
 import CleanupPage from "@/pages/CleanupPage";
 import ExpenseDetailPage from "@/pages/ExpenseDetailPage";
+import ManualEntryPage from "@/pages/ManualEntryPage";
 import AuthPage from "@/pages/AuthPage";
+import AddExpenseFAB from "@/components/AddExpenseFAB";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -39,9 +41,11 @@ function AppContent() {
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/expense/:id" element={<ExpenseDetailPage />} />
+        <Route path="/manual" element={<ManualEntryPage />} />
         <Route path="/cleanup" element={<CleanupPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <AddExpenseFAB />
       <BottomTabBar />
     </div>
   );
