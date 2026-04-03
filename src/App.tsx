@@ -10,6 +10,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import UploadPage from "@/pages/UploadPage";
 import TransactionsPage from "@/pages/TransactionsPage";
 import CleanupPage from "@/pages/CleanupPage";
+import ExpenseDetailPage from "@/pages/ExpenseDetailPage";
 import AuthPage from "@/pages/AuthPage";
 import NotFound from "./pages/NotFound.tsx";
 
