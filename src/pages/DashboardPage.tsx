@@ -216,7 +216,7 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground">≈ ₩{toKRW(businessTotal).toLocaleString()}</p>
             </div>
             <div className="rounded-xl bg-secondary p-3">
-              <p className="text-[10px] text-muted-foreground">{lang === "th" ? "จำนวนรายการ" : "Transactions"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("transactionCount", lang)}</p>
               <p className="text-lg font-bold text-foreground">{businessExpenses.length}</p>
             </div>
           </div>
