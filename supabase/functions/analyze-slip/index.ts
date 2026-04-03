@@ -67,7 +67,7 @@ Respond ONLY with the extracted data, nothing else.`;
                   ref_no: { type: "string", description: "Reference number or transaction ID" },
                   category: {
                     type: "string",
-                    enum: ["food", "transport", "shopping", "utilities", "entertainment", "health", "education", "other"],
+                    enum: ["food", "shopping", "transport", "golf", "bills", "cafe", "wellness", "grocery", "investment", "transfer", "travel", "other"],
                     description: "Expense category based on recipient",
                   },
                 },
