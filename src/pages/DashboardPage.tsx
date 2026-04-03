@@ -285,7 +285,7 @@ export default function DashboardPage() {
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={36} />
               <Tooltip
-                formatter={(value: number) => [`฿${value.toLocaleString()}`, lang === "th" ? "ยอดใช้จ่าย" : "Spending"]}
+                formatter={(value: number) => [`฿${value.toLocaleString()}`, t("spending", lang)]}
                 contentStyle={{ borderRadius: "12px", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: "12px" }}
               />
               <Bar dataKey="total" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
