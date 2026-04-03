@@ -22,6 +22,7 @@ export type Database = {
           date: string
           id: string
           recipient: string
+          ref_no: string | null
           slip_id: string | null
           time: string | null
           user_id: string
@@ -33,6 +34,7 @@ export type Database = {
           date: string
           id?: string
           recipient: string
+          ref_no?: string | null
           slip_id?: string | null
           time?: string | null
           user_id: string
@@ -44,6 +46,7 @@ export type Database = {
           date?: string
           id?: string
           recipient?: string
+          ref_no?: string | null
           slip_id?: string | null
           time?: string | null
           user_id?: string
