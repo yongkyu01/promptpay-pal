@@ -197,7 +197,7 @@ export default function ManualEntryPage() {
                   }`}
                 >
                   <Icon className="h-5 w-5" style={{ color: cfg.color }} />
-                  {lang === "th" ? cfg.labelTh : cfg.labelEn}
+                  {cfg.label[lang]}
                 </button>
               );
             })}
