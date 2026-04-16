@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { TrendingUp, Receipt, Clock, Crown, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import PromptPayQR from "@/components/merchant/PromptPayQR";
 
 export default function MerchantDashboardPage() {
   const { lang } = useApp();
@@ -91,6 +92,9 @@ export default function MerchantDashboardPage() {
           <p className="text-xl font-bold text-foreground">{peakHour}</p>
         </div>
       </div>
+
+      {/* QR Code Generator */}
+      <PromptPayQR />
 
       {/* Hourly Chart */}
       {hourlyData.length > 0 && (
