@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ScanLine, CheckCircle2, AlertTriangle, Loader2, Upload } from "lucide-react";
 import { fireConfetti } from "@/lib/confetti";
+import RegularCustomerCoupon from "@/components/merchant/RegularCustomerCoupon";
 
 interface ScanResult {
   sender_name: string;
