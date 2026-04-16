@@ -148,6 +148,9 @@ const translations = {
   switchToUser: { th: "สลับเป็นผู้ใช้", en: "Switch to User", ko: "사용자 모드로 전환", ja: "ユーザーモードへ" },
   noSalesYet: { th: "ยังไม่มียอดขาย", en: "No sales yet", ko: "아직 매출이 없습니다", ja: "まだ売上がありません" },
   verified: { th: "ยืนยันแล้ว", en: "Verified", ko: "확인됨", ja: "確認済み" },
+  amountMatched: { th: "ยอดเงินตรงกัน ✓", en: "Amount matched ✓", ko: "금액 일치 ✓", ja: "金額一致 ✓" },
+  amountMismatch: { th: "ยอดเงินไม่ตรง!", en: "Amount mismatch!", ko: "금액 불일치!", ja: "金額不一致！" },
+  expectedAmount: { th: "ยอดที่ต้องชำระ", en: "Expected Amount", ko: "예상 금액", ja: "予定金額" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

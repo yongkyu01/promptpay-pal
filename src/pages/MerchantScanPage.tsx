@@ -17,6 +17,12 @@ interface ScanResult {
   is_valid_slip: boolean;
 }
 
+interface MatchResult {
+  matched: boolean;
+  expectedAmount?: number;
+  pendingId?: string;
+}
+
 export default function MerchantScanPage() {
   const { lang } = useApp();
   const { user } = useAuth();
@@ -27,6 +33,7 @@ export default function MerchantScanPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [customerVisitCount, setCustomerVisitCount] = useState(0);
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -115,6 +122,29 @@ export default function MerchantScanPage() {
         setCustomerVisitCount(allSales?.length || 0);
       }
 
+      // Auto-match pending payments
+      const scannedAmount = Number(aiResult.amount);
+      const { data: pendingList } = await supabase
+        .from("pending_payments")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (pendingList && pendingList.length > 0) {
+        const match = (pendingList as any[]).find((p: any) => Number(p.amount) === scannedAmount);
+        if (match) {
+          await supabase.from("pending_payments").update({ status: "matched" } as any).eq("id", match.id);
+          setMatchResult({ matched: true, expectedAmount: scannedAmount, pendingId: match.id });
+          queryClient.invalidateQueries({ queryKey: ["pending_payments"] });
+        } else {
+          const nearest = (pendingList as any[])[0];
+          setMatchResult({ matched: false, expectedAmount: Number(nearest.amount) });
+        }
+      } else {
+        setMatchResult(null);
+      }
+
       fireConfetti();
       toast.success(t("paymentConfirmed", lang));
       queryClient.invalidateQueries({ queryKey: ["sales"] });
@@ -195,6 +225,26 @@ export default function MerchantScanPage() {
                 </div>
               )}
 
+              {/* Amount match result */}
+              {!isDuplicate && matchResult && (
+                matchResult.matched ? (
+                  <div className="flex items-center gap-3 rounded-xl bg-green-500/10 border border-green-500/20 p-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <p className="text-sm font-semibold text-green-700">{t("amountMatched", lang)}</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-700">{t("amountMismatch", lang)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("expectedAmount", lang)}: ฿{matchResult.expectedAmount?.toLocaleString()} → ฿{Number(result.amount).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
+
               <div className="rounded-xl bg-secondary/50 p-4 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-xs text-muted-foreground">{t("receiver", lang)}</span>
@@ -211,7 +261,7 @@ export default function MerchantScanPage() {
               </div>
 
               <button
-                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); setCustomerVisitCount(0); }}
+                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); setCustomerVisitCount(0); setMatchResult(null); }}
                 className="w-full rounded-xl border border-amber-200/30 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
               >
                 {lang === "th" ? "สแกนสลิปถัดไป" :
