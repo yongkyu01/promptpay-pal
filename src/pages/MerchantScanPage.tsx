@@ -26,6 +26,7 @@ export default function MerchantScanPage() {
   const [status, setStatus] = useState<"idle" | "scanning" | "done" | "error">("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [customerVisitCount, setCustomerVisitCount] = useState(0);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
