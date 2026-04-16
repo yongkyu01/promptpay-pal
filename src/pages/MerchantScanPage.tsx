@@ -219,6 +219,13 @@ export default function MerchantScanPage() {
                  lang === "ja" ? "次のレシートをスキャン" :
                  "Scan Next Slip"}
               </button>
+              {/* Regular customer coupon */}
+              {!isDuplicate && customerVisitCount >= 5 && result && (
+                <RegularCustomerCoupon
+                  customerName={result.sender_name}
+                  visitCount={customerVisitCount}
+                />
+              )}
             </div>
           )}
         </div>
