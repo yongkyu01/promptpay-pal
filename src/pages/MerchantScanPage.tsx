@@ -225,7 +225,26 @@ export default function MerchantScanPage() {
                 </div>
               )}
 
-              <div className="rounded-xl bg-secondary/50 p-4 space-y-2">
+              {/* Amount match result */}
+              {!isDuplicate && matchResult && (
+                matchResult.matched ? (
+                  <div className="flex items-center gap-3 rounded-xl bg-green-500/10 border border-green-500/20 p-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <p className="text-sm font-semibold text-green-700">{t("amountMatched", lang)}</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-700">{t("amountMismatch", lang)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("expectedAmount", lang)}: ฿{matchResult.expectedAmount?.toLocaleString()} → ฿{Number(result.amount).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
+
                 <div className="flex justify-between">
                   <span className="text-xs text-muted-foreground">{t("receiver", lang)}</span>
                   <span className="text-sm font-medium text-foreground">{result.sender_name}</span>
