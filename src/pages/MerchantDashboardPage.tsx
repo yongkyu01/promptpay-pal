@@ -12,6 +12,8 @@ import { TrendingUp, Receipt, Clock, Crown, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PromptPayQR from "@/components/merchant/PromptPayQR";
 import DailyReport from "@/components/merchant/DailyReport";
+import NetProfitTracker from "@/components/merchant/NetProfitTracker";
+import TaxExport from "@/components/merchant/TaxExport";
 
 export default function MerchantDashboardPage() {
   const { lang } = useApp();
@@ -175,8 +177,14 @@ export default function MerchantDashboardPage() {
         </div>
       )}
 
+      {/* Net Profit Tracker */}
+      <NetProfitTracker todaySales={todaySales} />
+
       {/* Daily Report with AI Summary */}
       <DailyReport todaySales={todaySales} />
+
+      {/* Tax Export */}
+      <TaxExport />
     </div>
   );
 }
