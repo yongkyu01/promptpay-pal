@@ -245,6 +245,7 @@ export default function MerchantScanPage() {
                 )
               )}
 
+              <div className="rounded-xl bg-secondary/50 p-4 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-xs text-muted-foreground">{t("receiver", lang)}</span>
                   <span className="text-sm font-medium text-foreground">{result.sender_name}</span>
