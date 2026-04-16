@@ -14,6 +14,7 @@ import PromptPayQR from "@/components/merchant/PromptPayQR";
 import DailyReport from "@/components/merchant/DailyReport";
 import NetProfitTracker from "@/components/merchant/NetProfitTracker";
 import TaxExport from "@/components/merchant/TaxExport";
+import SalesPeriodSummary from "@/components/merchant/SalesPeriodSummary";
 
 export default function MerchantDashboardPage() {
   const { lang } = useApp();
@@ -95,6 +96,9 @@ export default function MerchantDashboardPage() {
           <p className="text-xl font-bold text-foreground">{peakHour}</p>
         </div>
       </div>
+
+      {/* Period Sales Summary */}
+      <SalesPeriodSummary sales={sales} />
 
       {/* QR Code Generator */}
       <PromptPayQR />
