@@ -17,6 +17,12 @@ interface ScanResult {
   is_valid_slip: boolean;
 }
 
+interface MatchResult {
+  matched: boolean;
+  expectedAmount?: number;
+  pendingId?: string;
+}
+
 export default function MerchantScanPage() {
   const { lang } = useApp();
   const { user } = useAuth();
@@ -27,6 +33,7 @@ export default function MerchantScanPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [customerVisitCount, setCustomerVisitCount] = useState(0);
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -113,6 +120,29 @@ export default function MerchantScanPage() {
           .eq("user_id", user.id)
           .eq("sender_name", senderName);
         setCustomerVisitCount(allSales?.length || 0);
+      }
+
+      // Auto-match pending payments
+      const scannedAmount = Number(aiResult.amount);
+      const { data: pendingList } = await supabase
+        .from("pending_payments")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (pendingList && pendingList.length > 0) {
+        const match = (pendingList as any[]).find((p: any) => Number(p.amount) === scannedAmount);
+        if (match) {
+          await supabase.from("pending_payments").update({ status: "matched" } as any).eq("id", match.id);
+          setMatchResult({ matched: true, expectedAmount: scannedAmount, pendingId: match.id });
+          queryClient.invalidateQueries({ queryKey: ["pending_payments"] });
+        } else {
+          const nearest = (pendingList as any[])[0];
+          setMatchResult({ matched: false, expectedAmount: Number(nearest.amount) });
+        }
+      } else {
+        setMatchResult(null);
       }
 
       fireConfetti();
@@ -211,7 +241,7 @@ export default function MerchantScanPage() {
               </div>
 
               <button
-                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); setCustomerVisitCount(0); }}
+                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); setCustomerVisitCount(0); setMatchResult(null); }}
                 className="w-full rounded-xl border border-amber-200/30 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
               >
                 {lang === "th" ? "สแกนสลิปถัดไป" :
