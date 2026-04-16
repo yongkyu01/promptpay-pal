@@ -85,6 +85,29 @@
   }
 }
 
+/* Merchant Mode Theme — Gold/Black */
+.merchant-theme {
+  --background: 40 10% 6%;
+  --foreground: 40 10% 95%;
+  --card: 40 10% 10%;
+  --card-foreground: 40 10% 95%;
+  --popover: 40 10% 10%;
+  --popover-foreground: 40 10% 95%;
+  --primary: 43 96% 50%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 40 10% 15%;
+  --secondary-foreground: 40 10% 90%;
+  --muted: 40 8% 15%;
+  --muted-foreground: 40 8% 60%;
+  --accent: 43 96% 53%;
+  --accent-foreground: 43 96% 10%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 10% 18%;
+  --input: 40 10% 18%;
+  --ring: 43 96% 50%;
+}
+
 @layer base {
   * {
     @apply border-border;

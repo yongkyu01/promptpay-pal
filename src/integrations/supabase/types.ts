@@ -139,6 +139,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sales: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          image_url: string | null
+          is_verified: boolean
+          ref_no: string | null
+          sender_name: string
+          storage_path: string | null
+          time: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string
+          id?: string
+          image_url?: string | null
+          is_verified?: boolean
+          ref_no?: string | null
+          sender_name?: string
+          storage_path?: string | null
+          time?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          image_url?: string | null
+          is_verified?: boolean
+          ref_no?: string | null
+          sender_name?: string
+          storage_path?: string | null
+          time?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       slips: {
         Row: {
           created_at: string
@@ -162,6 +204,30 @@ export type Database = {
           image_url?: string
           is_processed?: boolean
           storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
