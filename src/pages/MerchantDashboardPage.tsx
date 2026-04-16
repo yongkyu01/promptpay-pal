@@ -11,6 +11,7 @@ import {
 import { TrendingUp, Receipt, Clock, Crown, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PromptPayQR from "@/components/merchant/PromptPayQR";
+import DailyReport from "@/components/merchant/DailyReport";
 
 export default function MerchantDashboardPage() {
   const { lang } = useApp();
@@ -173,6 +174,9 @@ export default function MerchantDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Daily Report with AI Summary */}
+      <DailyReport todaySales={todaySales} />
     </div>
   );
 }
