@@ -103,6 +103,18 @@ export default function MerchantScanPage() {
       setResult(aiResult);
       setStatus("done");
       setIsDuplicate(false);
+
+      // Check visit count for this customer
+      const senderName = (aiResult.recipient || aiResult.sender_name || "").trim();
+      if (senderName) {
+        const { data: allSales } = await supabase
+          .from("sales")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("sender_name", senderName);
+        setCustomerVisitCount(allSales?.length || 0);
+      }
+
       fireConfetti();
       toast.success(t("paymentConfirmed", lang));
       queryClient.invalidateQueries({ queryKey: ["sales"] });
