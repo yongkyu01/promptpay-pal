@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { ScanLine, CheckCircle2, AlertTriangle, Loader2, Upload } from "lucide-react";
 import { fireConfetti } from "@/lib/confetti";
+import RegularCustomerCoupon from "@/components/merchant/RegularCustomerCoupon";
 
 interface ScanResult {
   sender_name: string;
@@ -25,6 +26,7 @@ export default function MerchantScanPage() {
   const [status, setStatus] = useState<"idle" | "scanning" | "done" | "error">("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [customerVisitCount, setCustomerVisitCount] = useState(0);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -101,6 +103,18 @@ export default function MerchantScanPage() {
       setResult(aiResult);
       setStatus("done");
       setIsDuplicate(false);
+
+      // Check visit count for this customer
+      const senderName = (aiResult.recipient || aiResult.sender_name || "").trim();
+      if (senderName) {
+        const { data: allSales } = await supabase
+          .from("sales")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("sender_name", senderName);
+        setCustomerVisitCount(allSales?.length || 0);
+      }
+
       fireConfetti();
       toast.success(t("paymentConfirmed", lang));
       queryClient.invalidateQueries({ queryKey: ["sales"] });
@@ -197,7 +211,7 @@ export default function MerchantScanPage() {
               </div>
 
               <button
-                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); }}
+                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); setCustomerVisitCount(0); }}
                 className="w-full rounded-xl border border-amber-200/30 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
               >
                 {lang === "th" ? "สแกนสลิปถัดไป" :
@@ -205,6 +219,13 @@ export default function MerchantScanPage() {
                  lang === "ja" ? "次のレシートをスキャン" :
                  "Scan Next Slip"}
               </button>
+              {/* Regular customer coupon */}
+              {!isDuplicate && customerVisitCount >= 5 && result && (
+                <RegularCustomerCoupon
+                  customerName={result.sender_name}
+                  visitCount={customerVisitCount}
+                />
+              )}
             </div>
           )}
         </div>
