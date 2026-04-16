@@ -211,7 +211,7 @@ export default function MerchantScanPage() {
               </div>
 
               <button
-                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); }}
+                onClick={() => { setFile(null); setResult(null); setStatus("idle"); setIsDuplicate(false); setCustomerVisitCount(0); }}
                 className="w-full rounded-xl border border-amber-200/30 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
               >
                 {lang === "th" ? "สแกนสลิปถัดไป" :
