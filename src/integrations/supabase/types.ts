@@ -112,86 +112,44 @@ export type Database = {
           },
         ]
       }
-      merchant_expenses: {
+      friends: {
         Row: {
-          amount: number
-          category: string
+          avatar_color: string
           created_at: string
-          date: string
-          description: string | null
+          email: string | null
           id: string
-          updated_at: string
+          linked_user_id: string | null
+          name: string
           user_id: string
         }
         Insert: {
-          amount: number
-          category?: string
+          avatar_color?: string
           created_at?: string
-          date?: string
-          description?: string | null
+          email?: string | null
           id?: string
-          updated_at?: string
+          linked_user_id?: string | null
+          name: string
           user_id: string
         }
         Update: {
-          amount?: number
-          category?: string
+          avatar_color?: string
           created_at?: string
-          date?: string
-          description?: string | null
+          email?: string | null
           id?: string
-          updated_at?: string
+          linked_user_id?: string | null
+          name?: string
           user_id?: string
         }
         Relationships: []
-      }
-      pending_payments: {
-        Row: {
-          amount: number
-          created_at: string
-          id: string
-          matched_sale_id: string | null
-          promptpay_id: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          id?: string
-          matched_sale_id?: string | null
-          promptpay_id: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          id?: string
-          matched_sale_id?: string | null
-          promptpay_id?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pending_payments_matched_sale_id_fkey"
-            columns: ["matched_sale_id"]
-            isOneToOne: false
-            referencedRelation: "sales"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
+          promptpay_id: string | null
           updated_at: string
           user_id: string
         }
@@ -199,7 +157,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+          promptpay_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -207,50 +167,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+          promptpay_id?: string | null
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      sales: {
-        Row: {
-          amount: number
-          created_at: string
-          date: string
-          id: string
-          image_url: string | null
-          is_verified: boolean
-          ref_no: string | null
-          sender_name: string
-          storage_path: string | null
-          time: string | null
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          date?: string
-          id?: string
-          image_url?: string | null
-          is_verified?: boolean
-          ref_no?: string | null
-          sender_name?: string
-          storage_path?: string | null
-          time?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          date?: string
-          id?: string
-          image_url?: string | null
-          is_verified?: boolean
-          ref_no?: string | null
-          sender_name?: string
-          storage_path?: string | null
-          time?: string | null
           user_id?: string
         }
         Relationships: []
@@ -282,27 +202,151 @@ export type Database = {
         }
         Relationships: []
       }
-      user_settings: {
+      split_items: {
         Row: {
+          assigned_member_ids: Json
           created_at: string
           id: string
-          mode: string
-          updated_at: string
+          name: string
+          position: number
+          quantity: number
+          split_id: string
+          total: number
+          unit_price: number
           user_id: string
         }
         Insert: {
+          assigned_member_ids?: Json
           created_at?: string
           id?: string
-          mode?: string
-          updated_at?: string
+          name: string
+          position?: number
+          quantity?: number
+          split_id: string
+          total?: number
+          unit_price?: number
           user_id: string
         }
         Update: {
+          assigned_member_ids?: Json
           created_at?: string
           id?: string
-          mode?: string
+          name?: string
+          position?: number
+          quantity?: number
+          split_id?: string
+          total?: number
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_items_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      split_members: {
+        Row: {
+          amount_due: number
+          avatar_color: string
+          created_at: string
+          friend_id: string | null
+          id: string
+          is_owner: boolean
+          is_paid: boolean
+          linked_user_id: string | null
+          name: string
+          split_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_due?: number
+          avatar_color?: string
+          created_at?: string
+          friend_id?: string | null
+          id?: string
+          is_owner?: boolean
+          is_paid?: boolean
+          linked_user_id?: string | null
+          name: string
+          split_id: string
+          user_id: string
+        }
+        Update: {
+          amount_due?: number
+          avatar_color?: string
+          created_at?: string
+          friend_id?: string | null
+          id?: string
+          is_owner?: boolean
+          is_paid?: boolean
+          linked_user_id?: string | null
+          name?: string
+          split_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_members_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      splits: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          place: string | null
+          receipt_image_url: string | null
+          service_charge: number
+          status: string
+          subtotal: number
+          title: string
+          total: number
+          updated_at: string
+          user_id: string
+          vat: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          place?: string | null
+          receipt_image_url?: string | null
+          service_charge?: number
+          status?: string
+          subtotal?: number
+          title?: string
+          total?: number
+          updated_at?: string
+          user_id: string
+          vat?: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          place?: string | null
+          receipt_image_url?: string | null
+          service_charge?: number
+          status?: string
+          subtotal?: number
+          title?: string
+          total?: number
           updated_at?: string
           user_id?: string
+          vat?: number
         }
         Relationships: []
       }
