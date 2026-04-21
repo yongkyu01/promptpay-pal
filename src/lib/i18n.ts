@@ -38,6 +38,13 @@ const translations = {
   yourShare: { th: "ยอดของคุณ", en: "Your share", ko: "내 몫", ja: "あなたの分" },
   payViaQR: { th: "จ่ายด้วย QR", en: "Pay via QR", ko: "QR로 결제", ja: "QRで支払う" },
   shareSummary: { th: "แชร์สรุป", en: "Share Summary", ko: "요약 공유", ja: "サマリー共有" },
+  savePng: { th: "บันทึก PNG", en: "Save PNG", ko: "PNG 저장", ja: "PNG保存" },
+  pngSaved: { th: "บันทึก PNG แล้ว", en: "PNG saved", ko: "PNG로 저장했어요", ja: "PNGを保存しました" },
+  shareFallback: { th: "คัดลอกข้อความแล้ว พร้อมบันทึกรูป", en: "Copied text and prepared image", ko: "텍스트를 복사했고 이미지를 저장했어요", ja: "テキストをコピーして画像を保存しました" },
+  shareFailed: { th: "แชร์ไม่สำเร็จ", en: "Failed to share", ko: "공유에 실패했어요", ja: "共有に失敗しました" },
+  shareCardUnavailable: { th: "ยังสร้างการ์ดไม่ได้", en: "Card is not ready yet", ko: "카드를 아직 만들 수 없어요", ja: "カードをまだ生成できません" },
+  lineShareReady: { th: "เปิดแชร์ LINE แล้ว", en: "Opened LINE share", ko: "LINE 공유를 열었어요", ja: "LINE共有を開きました" },
+  kakaoShareReady: { th: "공유 시트를 열었어요", en: "Opened share sheet", ko: "공유 시트를 열었어요", ja: "共有シートを開きました" },
   recentSplits: { th: "หารล่าสุด", en: "Recent Splits", ko: "최근 정산", ja: "最近の割り勘" },
   noSplitsYet: { th: "ยังไม่มีบิลที่หาร", en: "No splits yet", ko: "아직 정산이 없어요", ja: "まだ割り勘がありません" },
   hostQR: { th: "QR ของผู้จัด", en: "Host's QR", ko: "주최자 QR", ja: "幹事のQR" },
@@ -194,6 +201,12 @@ const translations = {
   amountMatched: { th: "ยอดเงินตรงกัน ✓", en: "Amount matched ✓", ko: "금액 일치 ✓", ja: "金額一致 ✓" },
   amountMismatch: { th: "ยอดเงินไม่ตรง!", en: "Amount mismatch!", ko: "금액 불일치!", ja: "金額不一致！" },
   expectedAmount: { th: "ยอดที่ต้องชำระ", en: "Expected Amount", ko: "예상 금액", ja: "予定金額" },
+  ladderGame: { th: "เกมบันได", en: "Ladder Game", ko: "사다리게임", ja: "あみだくじ" },
+  ladderGameDesc: { th: "ใช้สุ่มลำดับจ่ายเงินแบบสนุก ๆ", en: "Pick a fun payment order", ko: "누가 먼저 보낼지 재밌게 정해요", ja: "支払い順を楽しく決めます" },
+  startLadder: { th: "เริ่มเกม", en: "Start", ko: "시작", ja: "スタート" },
+  ladderWinner: { th: "ผู้โชคดี", en: "Lucky one", ko: "당첨", ja: "当たり" },
+  ladderWaiting: { th: "รอลุ้น", en: "Waiting", ko: "대기", ja: "待機" },
+  ladderWinnerDesc: { th: "เริ่มจ่ายก่อนเลย 🎉", en: "goes first 🎉", ko: "먼저 송금하기 🎉", ja: "最初に支払います 🎉" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
