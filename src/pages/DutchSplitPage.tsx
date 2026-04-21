@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import generatePayload from "promptpay-qr";
 import QRCode from "qrcode";
 import { fireConfetti } from "@/lib/confetti";
+import SplitSummaryShareCard from "@/components/dutch/SplitSummaryShareCard";
+import SettlementLadderGame from "@/components/dutch/SettlementLadderGame";
 
 const COLORS = ["purple", "pink", "blue", "green", "orange", "cyan", "rose", "amber"];
 const colorBg: Record<string, string> = {
@@ -218,6 +220,12 @@ export default function DutchSplitPage() {
   }
 
   const isSettled = split.status === "settled";
+  const summaryMembers = members.map((m) => ({
+    id: m.id,
+    name: m.name,
+    amount: memberTotals.get(m.id) || 0,
+    isOwner: m.is_owner,
+  }));
 
   return (
     <div className="mx-auto max-w-lg space-y-4 px-4 py-4 pb-32 animate-slide-up">
@@ -386,6 +394,24 @@ export default function DutchSplitPage() {
           })}
         </div>
       </div>
+
+      <SettlementLadderGame
+        lang={lang}
+        members={members.map((member) => ({ id: member.id, name: member.name }))}
+      />
+
+      {isSettled ? (
+        <SplitSummaryShareCard
+          lang={lang}
+          title={split.title}
+          place={split.place}
+          subtotal={subtotal}
+          vat={vatAmount}
+          serviceCharge={serviceAmount}
+          total={total}
+          members={summaryMembers}
+        />
+      ) : null}
 
       {/* Actions */}
       {!isSettled ? (
