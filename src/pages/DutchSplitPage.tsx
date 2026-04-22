@@ -398,6 +398,16 @@ export default function DutchSplitPage() {
       <SettlementLadderGame
         lang={lang}
         members={members.map((member) => ({ id: member.id, name: member.name }))}
+        total={total}
+        onApply={async (assignments) => {
+          await Promise.all(
+            assignments.map((a) =>
+              supabase.from("split_members").update({ amount_due: a.amount }).eq("id", a.memberId)
+            )
+          );
+          queryClient.invalidateQueries({ queryKey: ["split_members", id] });
+          toast.success(t("ladderApplied", lang));
+        }}
       />
 
       {isSettled ? (
