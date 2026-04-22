@@ -39,10 +39,9 @@ export default function DutchPage() {
       const path = `${user.id}/receipt-${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("slips").upload(path, file);
       if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("slips").getPublicUrl(path);
 
       const { data: ai, error: aiErr } = await supabase.functions.invoke("analyze-receipt", {
-        body: { imageUrl: urlData.publicUrl },
+        body: { storagePath: path },
       });
       if (aiErr) throw new Error(aiErr.message);
       if (ai?.error) throw new Error(ai.error);
@@ -58,7 +57,7 @@ export default function DutchPage() {
           user_id: user.id,
           title: ai.place || "Dutch",
           place: ai.place || null,
-          receipt_image_url: urlData.publicUrl,
+          receipt_image_url: path,
           subtotal: ai.subtotal || 0,
           vat: ai.vat || 0,
           service_charge: ai.service_charge || 0,
