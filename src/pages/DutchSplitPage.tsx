@@ -29,6 +29,7 @@ export default function DutchSplitPage() {
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [hostPromptpay, setHostPromptpay] = useState<string | null>(null);
+  const [splitMethod, setSplitMethod] = useState<"equal" | "ladder">("equal");
 
   const { data: split } = useQuery({
     queryKey: ["split", id],
