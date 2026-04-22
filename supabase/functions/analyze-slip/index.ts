@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,9 +13,53 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl } = await req.json();
+    // Auth check — reject unauthenticated callers to prevent AI credit abuse
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { storagePath } = body;
+    let { imageUrl } = body;
+
+    // Prefer storagePath: generate a short-lived signed URL scoped to the caller
+    if (storagePath) {
+      if (typeof storagePath !== "string" || !storagePath.startsWith(`${userData.user.id}/`)) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: signed, error: signErr } = await supabaseClient.storage
+        .from("slips")
+        .createSignedUrl(storagePath, 120);
+      if (signErr || !signed?.signedUrl) {
+        return new Response(JSON.stringify({ error: "Could not access image" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      imageUrl = signed.signedUrl;
+    }
+
     if (!imageUrl) {
-      return new Response(JSON.stringify({ error: "imageUrl is required" }), {
+      return new Response(JSON.stringify({ error: "storagePath or imageUrl is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -56,16 +56,12 @@ export default function UploadPage() {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
-          .from("slips")
-          .getPublicUrl(filePath);
-
         // 2. Insert into slips table
         const { data: slipData, error: slipError } = await supabase
           .from("slips")
           .insert({
             user_id: user.id,
-            image_url: urlData.publicUrl,
+            image_url: filePath,
             storage_path: filePath,
             is_processed: false,
           })
@@ -78,7 +74,7 @@ export default function UploadPage() {
 
         // 3. Call AI analyze-slip edge function
         const { data: aiResult, error: fnError } = await supabase.functions.invoke("analyze-slip", {
-          body: { imageUrl: urlData.publicUrl },
+          body: { storagePath: filePath },
         });
 
         if (fnError) throw new Error(fnError.message || "AI analysis failed");

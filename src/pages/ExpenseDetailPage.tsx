@@ -50,10 +50,17 @@ export default function ExpenseDetailPage() {
       if (!expense?.slip_id) return null;
       const { data } = await supabase
         .from("slips")
-        .select("image_url")
+        .select("image_url, storage_path")
         .eq("id", expense.slip_id)
         .single();
-      return data?.image_url ?? null;
+      const path = data?.storage_path ?? data?.image_url;
+      if (!path) return null;
+      // If it's already an http(s) URL (legacy public URL), return as-is
+      if (/^https?:\/\//i.test(path)) return path;
+      const { data: signed } = await supabase.storage
+        .from("slips")
+        .createSignedUrl(path, 3600);
+      return signed?.signedUrl ?? null;
     },
     enabled: !!expense?.slip_id,
   });
