@@ -29,6 +29,7 @@ export default function DutchSplitPage() {
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [hostPromptpay, setHostPromptpay] = useState<string | null>(null);
+  const [splitMethod, setSplitMethod] = useState<"equal" | "ladder">("equal");
 
   const { data: split } = useQuery({
     queryKey: ["split", id],
@@ -367,7 +368,36 @@ export default function DutchSplitPage() {
         <Row label={t("total", lang)} value={total} bold />
       </div>
 
+      {/* Split method selector */}
+      {!isSettled && members.length >= 2 && (
+        <div className="rounded-2xl border border-border bg-card p-2">
+          <div className="grid grid-cols-2 gap-1">
+            <button
+              onClick={() => setSplitMethod("equal")}
+              className={`rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                splitMethod === "equal"
+                  ? "gradient-primary text-primary-foreground shadow-primary"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🍽️ {t("splitMethodEqual", lang)}
+            </button>
+            <button
+              onClick={() => setSplitMethod("ladder")}
+              className={`rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                splitMethod === "ladder"
+                  ? "gradient-gold text-accent-foreground shadow-gold"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🎲 {t("splitMethodLadder", lang)}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Per-member summary card */}
+      {splitMethod === "equal" && (
       <div className={`rounded-3xl p-5 text-white shadow-primary transition-all ${
         isSettled ? "gradient-gold" : "gradient-primary"
       }`}>
@@ -394,21 +424,24 @@ export default function DutchSplitPage() {
           })}
         </div>
       </div>
+      )}
 
-      <SettlementLadderGame
-        lang={lang}
-        members={members.map((member) => ({ id: member.id, name: member.name }))}
-        total={total}
-        onApply={async (assignments) => {
-          await Promise.all(
-            assignments.map((a) =>
-              supabase.from("split_members").update({ amount_due: a.amount }).eq("id", a.memberId)
-            )
-          );
-          queryClient.invalidateQueries({ queryKey: ["split_members", id] });
-          toast.success(t("ladderApplied", lang));
-        }}
-      />
+      {splitMethod === "ladder" && !isSettled && (
+        <SettlementLadderGame
+          lang={lang}
+          members={members.map((member) => ({ id: member.id, name: member.name }))}
+          total={total}
+          onApply={async (assignments) => {
+            await Promise.all(
+              assignments.map((a) =>
+                supabase.from("split_members").update({ amount_due: a.amount }).eq("id", a.memberId)
+              )
+            );
+            queryClient.invalidateQueries({ queryKey: ["split_members", id] });
+            toast.success(t("ladderApplied", lang));
+          }}
+        />
+      )}
 
       {isSettled ? (
         <SplitSummaryShareCard

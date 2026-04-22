@@ -218,6 +218,9 @@ const translations = {
   ladderResultTitle: { th: "ผลการสุ่ม", en: "Result", ko: "결과", ja: "結果" },
   ladderApplied: { th: "ใช้กับยอดเรียบร้อย", en: "Applied to amounts", ko: "정산 금액에 반영했어요", ja: "金額に反映しました" },
   ladderTotalMismatch: { th: "ผลรวมไม่ตรงกับยอดรวม", en: "Slots total doesn't match", ko: "슬롯 합계가 총액과 달라요", ja: "合計が総額と一致しません" },
+  splitMethod: { th: "วิธีหารบิล", en: "Split method", ko: "정산 방식", ja: "精算方法" },
+  splitMethodEqual: { th: "หารตามเมนู", en: "By items / Equal", ko: "메뉴/균등 분배", ja: "メニュー/均等" },
+  splitMethodLadder: { th: "เกมบันได", en: "Ladder game", ko: "사다리게임", ja: "あみだくじ" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
