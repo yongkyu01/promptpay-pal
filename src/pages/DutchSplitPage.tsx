@@ -220,6 +220,7 @@ export default function DutchSplitPage() {
   }
 
   const isSettled = split.status === "settled";
+  const splitMethod: "equal" | "ladder" = (split.note === "ladder" ? "ladder" : "equal");
   const summaryMembers = members.map((m) => ({
     id: m.id,
     name: m.name,
