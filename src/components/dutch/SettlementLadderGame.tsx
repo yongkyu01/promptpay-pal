@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dices, Play, Trophy, RotateCcw, CheckCircle2, Wand2 } from "lucide-react";
+import { Dices, Play, Trophy, RotateCcw, CheckCircle2, Wand2, Shuffle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,13 +28,45 @@ type LadderRun = {
   destinations: number[];
 };
 
+// Ladder geometry (in SVG user units)
+const COL_W = 100;
+const ROW_H = 36;
+const TOP_PAD = 12;
+const BOTTOM_PAD = 12;
+
+// Color palette for player tracks (HSL via CSS vars when available, fallback to fixed hues)
+const TRACK_COLORS = [
+  "hsl(0 84% 60%)",
+  "hsl(220 90% 56%)",
+  "hsl(140 70% 45%)",
+  "hsl(35 95% 55%)",
+  "hsl(280 75% 60%)",
+  "hsl(190 85% 50%)",
+  "hsl(330 80% 60%)",
+  "hsl(50 95% 55%)",
+];
+
 export default function SettlementLadderGame({ lang, members, total = 0, onApply }: SettlementLadderGameProps) {
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [rungs, setRungs] = useState<boolean[][]>([]);
   const [run, setRun] = useState<LadderRun | null>(null);
-  const [animating, setAnimating] = useState(false);
+  const [revealed, setRevealed] = useState<boolean[]>([]); // which member's path is fully drawn
+  const [activeMember, setActiveMember] = useState<number | null>(null);
 
   const columnCount = members.length;
-  const rowCount = Math.max(6, members.length + 3);
+  const rowCount = Math.max(8, members.length * 2 + 4);
+
+  // Build rungs whenever the grid size changes
+  useEffect(() => {
+    if (columnCount < 2) {
+      setRungs([]);
+      return;
+    }
+    setRungs(buildRungs(rowCount, columnCount));
+    setRun(null);
+    setRevealed([]);
+    setActiveMember(null);
+  }, [columnCount, rowCount]);
 
   // Auto-fill slots when member count changes
   useEffect(() => {
@@ -65,20 +97,51 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setRun(null);
   };
 
+  const shuffleRungs = () => {
+    setRungs(buildRungs(rowCount, columnCount));
+    setRun(null);
+    setRevealed([]);
+    setActiveMember(null);
+  };
+
   const startGame = () => {
     if (members.length < 2 || slots.length !== members.length) return;
-    const rungs = buildRungs(rowCount, columnCount);
-    const paths = members.map((_, startIndex) => walk(rungs, startIndex, columnCount));
+    const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
+    if (!rungs.length) setRungs(r);
+    const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
     const destinations = paths.map((p) => p[p.length - 1]);
-    setAnimating(true);
     setRun({ paths, destinations });
-    // animation duration matches CSS below
-    window.setTimeout(() => setAnimating(false), 1400);
+    setRevealed(members.map(() => false));
+    setActiveMember(0);
+    // Reveal each player's path one after another
+    const perPath = 1100;
+    members.forEach((_, i) => {
+      window.setTimeout(() => {
+        setActiveMember(i);
+        setRevealed((prev) => {
+          const next = [...prev];
+          next[i] = false; // restart animation for this index
+          return next;
+        });
+        // Trigger draw on next tick
+        window.setTimeout(() => {
+          setRevealed((prev) => {
+            const next = [...prev];
+            next[i] = true;
+            return next;
+          });
+        }, 30);
+      }, i * perPath);
+    });
+    window.setTimeout(() => setActiveMember(null), members.length * perPath + 200);
   };
 
   const reset = () => {
     setRun(null);
+    setRevealed([]);
+    setActiveMember(null);
     setSlots(buildPresetSlots(members.length, total, lang));
+    setRungs(buildRungs(rowCount, columnCount));
   };
 
   const apply = () => {
@@ -108,7 +171,10 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
           <Button variant="outline" size="sm" onClick={presetFill} className="rounded-xl" title={t("ladderPreset", lang)}>
             <Wand2 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="secondary" size="sm" onClick={startGame} className="rounded-xl" disabled={animating}>
+          <Button variant="outline" size="sm" onClick={shuffleRungs} className="rounded-xl" title="Shuffle ladder">
+            <Shuffle className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={startGame} className="rounded-xl" disabled={activeMember !== null}>
             <Play className="h-3.5 w-3.5" />
             {t("startLadder", lang)}
           </Button>
@@ -116,63 +182,110 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
       </div>
 
       {/* Ladder visual */}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-secondary/40 p-4">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-secondary/40 p-3">
+        {/* Top: clickable member chips */}
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
-          {/* Top: members */}
           {members.map((member, index) => {
-            const isLucky = run && slots[run.destinations[index]]?.amount === Math.min(...slots.map((s) => s.amount));
+            const color = TRACK_COLORS[index % TRACK_COLORS.length];
+            const isActive = activeMember === index;
             return (
-              <div key={`top-${member.id}`} className="text-center">
-                <div className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${run && isLucky ? "bg-primary text-primary-foreground shadow-primary" : "bg-background text-foreground"}`}>
-                  {member.name}
-                </div>
-              </div>
+              <button
+                key={`top-${member.id}`}
+                type="button"
+                onClick={() => {
+                  if (activeMember !== null) return;
+                  if (!run) return;
+                  setActiveMember(index);
+                  setRevealed((prev) => {
+                    const next = [...prev];
+                    next[index] = false;
+                    return next;
+                  });
+                  window.setTimeout(() => {
+                    setRevealed((prev) => {
+                      const next = [...prev];
+                      next[index] = true;
+                      return next;
+                    });
+                  }, 30);
+                  window.setTimeout(() => setActiveMember(null), 1100);
+                }}
+                className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${isActive ? "scale-105 shadow-primary" : ""}`}
+                style={{ background: color, color: "white" }}
+              >
+                {member.name}
+              </button>
             );
           })}
         </div>
 
-        {/* Ladder paths */}
-        <div className="relative mt-3" style={{ height: `${rowCount * 24}px` }}>
+        {/* Ladder SVG */}
+        <svg
+          className="mt-2 w-full"
+          viewBox={`0 0 ${columnCount * COL_W} ${rowCount * ROW_H + TOP_PAD + BOTTOM_PAD}`}
+          preserveAspectRatio="none"
+          style={{ height: `${rowCount * ROW_H + TOP_PAD + BOTTOM_PAD}px`, maxHeight: 420 }}
+        >
           {/* Vertical rails */}
-          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
-            {Array.from({ length: columnCount }).map((_, i) => (
-              <div key={`rail-${i}`} className="relative">
-                <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border" />
-              </div>
-            ))}
-          </div>
+          {Array.from({ length: columnCount }).map((_, i) => (
+            <line
+              key={`rail-${i}`}
+              x1={i * COL_W + COL_W / 2}
+              x2={i * COL_W + COL_W / 2}
+              y1={TOP_PAD}
+              y2={rowCount * ROW_H + TOP_PAD}
+              stroke="hsl(var(--border))"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+          ))}
 
-          {/* Highlighted path lines per member */}
-          {run && members.map((member, mIdx) => {
-            const path = run.paths[mIdx];
-            return (
-              <svg
-                key={`path-${member.id}`}
-                className="absolute inset-0 h-full w-full pointer-events-none"
-                preserveAspectRatio="none"
-                viewBox={`0 0 ${columnCount * 100} ${rowCount * 24}`}
-              >
+          {/* Horizontal rungs */}
+          {rungs.map((row, rIdx) =>
+            row.map((on, cIdx) =>
+              on ? (
+                <line
+                  key={`rung-${rIdx}-${cIdx}`}
+                  x1={cIdx * COL_W + COL_W / 2}
+                  x2={(cIdx + 1) * COL_W + COL_W / 2}
+                  y1={TOP_PAD + rIdx * ROW_H + ROW_H / 2}
+                  y2={TOP_PAD + rIdx * ROW_H + ROW_H / 2}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  opacity={0.55}
+                />
+              ) : null
+            )
+          )}
+
+          {/* Animated player paths */}
+          {run &&
+            members.map((member, mIdx) => {
+              const path = run.paths[mIdx];
+              const points = buildPolyline(path);
+              const length = estimateLength(path);
+              const isRevealed = revealed[mIdx];
+              const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
+              return (
                 <polyline
-                  points={path.map((col, rIdx) => `${col * 100 + 50},${rIdx * 24}`).join(" ")}
+                  key={`path-${member.id}`}
+                  points={points}
                   fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
+                  stroke={color}
+                  strokeWidth={4}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  opacity={0.55}
                   style={{
-                    strokeDasharray: animating ? 800 : "none",
-                    strokeDashoffset: animating ? 800 : 0,
-                    transition: "stroke-dashoffset 1.2s ease-out",
+                    strokeDasharray: length,
+                    strokeDashoffset: isRevealed ? 0 : length,
+                    transition: "stroke-dashoffset 1s ease-in-out",
+                    opacity: activeMember === null || activeMember === mIdx ? 1 : 0.15,
                   }}
                 />
-              </svg>
-            );
-          })}
-
-          {/* Static rungs visualization */}
-          {run && rows.map((_, rowIndex) => null)}
-        </div>
+              );
+            })}
+        </svg>
 
         {/* Bottom: editable slots */}
         <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
@@ -301,4 +414,33 @@ function walk(rungs: boolean[][], startCol: number, columnCount: number): number
     steps.push(col);
   }
   return steps;
+}
+
+/**
+ * Build a Naver-style polyline from a column-walk: vertical down, horizontal across rung, vertical down...
+ * `path[i]` = column position AFTER row i is processed; path[0] = start column.
+ */
+function buildPolyline(path: number[]): string {
+  const pts: string[] = [];
+  // Start at top of starting column
+  pts.push(`${path[0] * COL_W + COL_W / 2},${TOP_PAD}`);
+  for (let i = 1; i < path.length; i++) {
+    const prevCol = path[i - 1];
+    const curCol = path[i];
+    const rowMidY = TOP_PAD + (i - 1) * ROW_H + ROW_H / 2;
+    if (prevCol !== curCol) {
+      // come down to mid of this row on previous column
+      pts.push(`${prevCol * COL_W + COL_W / 2},${rowMidY}`);
+      // cross rung horizontally to current column
+      pts.push(`${curCol * COL_W + COL_W / 2},${rowMidY}`);
+    }
+    // descend to bottom of this row in current column
+    pts.push(`${curCol * COL_W + COL_W / 2},${TOP_PAD + i * ROW_H}`);
+  }
+  return pts.join(" ");
+}
+
+function estimateLength(path: number[]): number {
+  // Rough overestimate so dasharray fully hides initially
+  return (path.length * ROW_H + path.length * COL_W) * 2;
 }
