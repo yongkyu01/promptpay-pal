@@ -171,7 +171,10 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
           <Button variant="outline" size="sm" onClick={presetFill} className="rounded-xl" title={t("ladderPreset", lang)}>
             <Wand2 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="secondary" size="sm" onClick={startGame} className="rounded-xl" disabled={animating}>
+          <Button variant="outline" size="sm" onClick={shuffleRungs} className="rounded-xl" title="Shuffle ladder">
+            <Shuffle className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={startGame} className="rounded-xl" disabled={activeMember !== null}>
             <Play className="h-3.5 w-3.5" />
             {t("startLadder", lang)}
           </Button>
@@ -179,63 +182,110 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
       </div>
 
       {/* Ladder visual */}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-secondary/40 p-4">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-secondary/40 p-3">
+        {/* Top: clickable member chips */}
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
-          {/* Top: members */}
           {members.map((member, index) => {
-            const isLucky = run && slots[run.destinations[index]]?.amount === Math.min(...slots.map((s) => s.amount));
+            const color = TRACK_COLORS[index % TRACK_COLORS.length];
+            const isActive = activeMember === index;
             return (
-              <div key={`top-${member.id}`} className="text-center">
-                <div className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${run && isLucky ? "bg-primary text-primary-foreground shadow-primary" : "bg-background text-foreground"}`}>
-                  {member.name}
-                </div>
-              </div>
+              <button
+                key={`top-${member.id}`}
+                type="button"
+                onClick={() => {
+                  if (activeMember !== null) return;
+                  if (!run) return;
+                  setActiveMember(index);
+                  setRevealed((prev) => {
+                    const next = [...prev];
+                    next[index] = false;
+                    return next;
+                  });
+                  window.setTimeout(() => {
+                    setRevealed((prev) => {
+                      const next = [...prev];
+                      next[index] = true;
+                      return next;
+                    });
+                  }, 30);
+                  window.setTimeout(() => setActiveMember(null), 1100);
+                }}
+                className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${isActive ? "scale-105 shadow-primary" : ""}`}
+                style={{ background: color, color: "white" }}
+              >
+                {member.name}
+              </button>
             );
           })}
         </div>
 
-        {/* Ladder paths */}
-        <div className="relative mt-3" style={{ height: `${rowCount * 24}px` }}>
+        {/* Ladder SVG */}
+        <svg
+          className="mt-2 w-full"
+          viewBox={`0 0 ${columnCount * COL_W} ${rowCount * ROW_H + TOP_PAD + BOTTOM_PAD}`}
+          preserveAspectRatio="none"
+          style={{ height: `${rowCount * ROW_H + TOP_PAD + BOTTOM_PAD}px`, maxHeight: 420 }}
+        >
           {/* Vertical rails */}
-          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
-            {Array.from({ length: columnCount }).map((_, i) => (
-              <div key={`rail-${i}`} className="relative">
-                <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border" />
-              </div>
-            ))}
-          </div>
+          {Array.from({ length: columnCount }).map((_, i) => (
+            <line
+              key={`rail-${i}`}
+              x1={i * COL_W + COL_W / 2}
+              x2={i * COL_W + COL_W / 2}
+              y1={TOP_PAD}
+              y2={rowCount * ROW_H + TOP_PAD}
+              stroke="hsl(var(--border))"
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+          ))}
 
-          {/* Highlighted path lines per member */}
-          {run && members.map((member, mIdx) => {
-            const path = run.paths[mIdx];
-            return (
-              <svg
-                key={`path-${member.id}`}
-                className="absolute inset-0 h-full w-full pointer-events-none"
-                preserveAspectRatio="none"
-                viewBox={`0 0 ${columnCount * 100} ${rowCount * 24}`}
-              >
+          {/* Horizontal rungs */}
+          {rungs.map((row, rIdx) =>
+            row.map((on, cIdx) =>
+              on ? (
+                <line
+                  key={`rung-${rIdx}-${cIdx}`}
+                  x1={cIdx * COL_W + COL_W / 2}
+                  x2={(cIdx + 1) * COL_W + COL_W / 2}
+                  y1={TOP_PAD + rIdx * ROW_H + ROW_H / 2}
+                  y2={TOP_PAD + rIdx * ROW_H + ROW_H / 2}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  opacity={0.55}
+                />
+              ) : null
+            )
+          )}
+
+          {/* Animated player paths */}
+          {run &&
+            members.map((member, mIdx) => {
+              const path = run.paths[mIdx];
+              const points = buildPolyline(path);
+              const length = estimateLength(path);
+              const isRevealed = revealed[mIdx];
+              const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
+              return (
                 <polyline
-                  points={path.map((col, rIdx) => `${col * 100 + 50},${rIdx * 24}`).join(" ")}
+                  key={`path-${member.id}`}
+                  points={points}
                   fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
+                  stroke={color}
+                  strokeWidth={4}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  opacity={0.55}
                   style={{
-                    strokeDasharray: animating ? 800 : "none",
-                    strokeDashoffset: animating ? 800 : 0,
-                    transition: "stroke-dashoffset 1.2s ease-out",
+                    strokeDasharray: length,
+                    strokeDashoffset: isRevealed ? 0 : length,
+                    transition: "stroke-dashoffset 1s ease-in-out",
+                    opacity: activeMember === null || activeMember === mIdx ? 1 : 0.15,
                   }}
                 />
-              </svg>
-            );
-          })}
-
-          {/* Static rungs visualization */}
-          {run && rows.map((_, rowIndex) => null)}
-        </div>
+              );
+            })}
+        </svg>
 
         {/* Bottom: editable slots */}
         <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
