@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dices, Play, Trophy, RotateCcw, CheckCircle2, Wand2 } from "lucide-react";
+import { Dices, Play, Trophy, RotateCcw, CheckCircle2, Wand2, Shuffle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,13 +28,45 @@ type LadderRun = {
   destinations: number[];
 };
 
+// Ladder geometry (in SVG user units)
+const COL_W = 100;
+const ROW_H = 36;
+const TOP_PAD = 12;
+const BOTTOM_PAD = 12;
+
+// Color palette for player tracks (HSL via CSS vars when available, fallback to fixed hues)
+const TRACK_COLORS = [
+  "hsl(0 84% 60%)",
+  "hsl(220 90% 56%)",
+  "hsl(140 70% 45%)",
+  "hsl(35 95% 55%)",
+  "hsl(280 75% 60%)",
+  "hsl(190 85% 50%)",
+  "hsl(330 80% 60%)",
+  "hsl(50 95% 55%)",
+];
+
 export default function SettlementLadderGame({ lang, members, total = 0, onApply }: SettlementLadderGameProps) {
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [rungs, setRungs] = useState<boolean[][]>([]);
   const [run, setRun] = useState<LadderRun | null>(null);
-  const [animating, setAnimating] = useState(false);
+  const [revealed, setRevealed] = useState<boolean[]>([]); // which member's path is fully drawn
+  const [activeMember, setActiveMember] = useState<number | null>(null);
 
   const columnCount = members.length;
-  const rowCount = Math.max(6, members.length + 3);
+  const rowCount = Math.max(8, members.length * 2 + 4);
+
+  // Build rungs whenever the grid size changes
+  useEffect(() => {
+    if (columnCount < 2) {
+      setRungs([]);
+      return;
+    }
+    setRungs(buildRungs(rowCount, columnCount));
+    setRun(null);
+    setRevealed([]);
+    setActiveMember(null);
+  }, [columnCount, rowCount]);
 
   // Auto-fill slots when member count changes
   useEffect(() => {
@@ -65,20 +97,51 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setRun(null);
   };
 
+  const shuffleRungs = () => {
+    setRungs(buildRungs(rowCount, columnCount));
+    setRun(null);
+    setRevealed([]);
+    setActiveMember(null);
+  };
+
   const startGame = () => {
     if (members.length < 2 || slots.length !== members.length) return;
-    const rungs = buildRungs(rowCount, columnCount);
-    const paths = members.map((_, startIndex) => walk(rungs, startIndex, columnCount));
+    const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
+    if (!rungs.length) setRungs(r);
+    const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
     const destinations = paths.map((p) => p[p.length - 1]);
-    setAnimating(true);
     setRun({ paths, destinations });
-    // animation duration matches CSS below
-    window.setTimeout(() => setAnimating(false), 1400);
+    setRevealed(members.map(() => false));
+    setActiveMember(0);
+    // Reveal each player's path one after another
+    const perPath = 1100;
+    members.forEach((_, i) => {
+      window.setTimeout(() => {
+        setActiveMember(i);
+        setRevealed((prev) => {
+          const next = [...prev];
+          next[i] = false; // restart animation for this index
+          return next;
+        });
+        // Trigger draw on next tick
+        window.setTimeout(() => {
+          setRevealed((prev) => {
+            const next = [...prev];
+            next[i] = true;
+            return next;
+          });
+        }, 30);
+      }, i * perPath);
+    });
+    window.setTimeout(() => setActiveMember(null), members.length * perPath + 200);
   };
 
   const reset = () => {
     setRun(null);
+    setRevealed([]);
+    setActiveMember(null);
     setSlots(buildPresetSlots(members.length, total, lang));
+    setRungs(buildRungs(rowCount, columnCount));
   };
 
   const apply = () => {
