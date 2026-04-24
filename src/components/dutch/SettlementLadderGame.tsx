@@ -415,3 +415,32 @@ function walk(rungs: boolean[][], startCol: number, columnCount: number): number
   }
   return steps;
 }
+
+/**
+ * Build a Naver-style polyline from a column-walk: vertical down, horizontal across rung, vertical down...
+ * `path[i]` = column position AFTER row i is processed; path[0] = start column.
+ */
+function buildPolyline(path: number[]): string {
+  const pts: string[] = [];
+  // Start at top of starting column
+  pts.push(`${path[0] * COL_W + COL_W / 2},${TOP_PAD}`);
+  for (let i = 1; i < path.length; i++) {
+    const prevCol = path[i - 1];
+    const curCol = path[i];
+    const rowMidY = TOP_PAD + (i - 1) * ROW_H + ROW_H / 2;
+    if (prevCol !== curCol) {
+      // come down to mid of this row on previous column
+      pts.push(`${prevCol * COL_W + COL_W / 2},${rowMidY}`);
+      // cross rung horizontally to current column
+      pts.push(`${curCol * COL_W + COL_W / 2},${rowMidY}`);
+    }
+    // descend to bottom of this row in current column
+    pts.push(`${curCol * COL_W + COL_W / 2},${TOP_PAD + i * ROW_H}`);
+  }
+  return pts.join(" ");
+}
+
+function estimateLength(path: number[]): number {
+  // Rough overestimate so dasharray fully hides initially
+  return (path.length * ROW_H + path.length * COL_W) * 2;
+}
