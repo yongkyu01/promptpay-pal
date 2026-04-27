@@ -1,6 +1,6 @@
 import { Plus, ScanLine, PenLine } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { t } from "@/lib/i18n";
 import {
@@ -12,7 +12,10 @@ import {
 export default function AddExpenseFAB() {
   const { lang } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+
+  if (location.pathname !== "/") return null;
 
   const options = [
     {
