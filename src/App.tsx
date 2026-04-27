@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -24,12 +25,34 @@ import InquiryPage from "@/pages/InquiryPage";
 import TermsConsentGate from "@/components/TermsConsentGate";
 import PublicLegalPage from "@/pages/PublicLegalPage";
 import NotFound from "./pages/NotFound.tsx";
+import { isNative, setSessionFromCallbackUrl } from "@/lib/nativeAuth";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const { user, loading } = useAuth();
   const location = useLocation();
+
+  // Native deep-link listener: handles OAuth callbacks that arrive when the
+  // in-app browser cannot deliver them directly to the awaiting promise.
+  useEffect(() => {
+    if (!isNative()) return;
+    let sub: { remove: () => void } | null = null;
+    CapacitorApp.addListener("appUrlOpen", async (data) => {
+      try {
+        const url = new URL(data.url);
+        if (url.hash.includes("access_token") || url.search.includes("access_token")) {
+          await Browser.close().catch(() => {});
+          await setSessionFromCallbackUrl(url);
+        }
+      } catch (e) {
+        console.error("Deep link handler failed", e);
+      }
+    }).then((s) => { sub = s; });
+    return () => { sub?.remove(); };
+  }, []);
 
   // Public legal pages — accessible without login.
   if (location.pathname === "/legal/terms") {
