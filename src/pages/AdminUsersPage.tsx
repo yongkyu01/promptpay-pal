@@ -16,13 +16,15 @@ import { toast } from "sonner";
 
 type Lang = "th" | "en" | "ko" | "ja";
 
-interface Profile {
-  id: string;
+interface AdminUser {
   user_id: string;
   display_name: string | null;
   email: string | null;
   avatar_url: string | null;
   created_at: string;
+  last_sign_in_at: string | null;
+  provider: string | null;
+  is_admin: boolean;
 }
 
 const i18n: Record<Lang, Record<string, string>> = {
@@ -33,6 +35,7 @@ const i18n: Record<Lang, Record<string, string>> = {
     deleteUser: "ลบ", confirmDelete: "ลบบัญชีผู้ใช้นี้? ไม่สามารถย้อนกลับได้",
     confirmSetAdmin: "ตั้งเป็นแอดมินหรือไม่?", confirmRemoveAdmin: "ถอนสิทธิ์แอดมินหรือไม่?",
     cancel: "ยกเลิก", confirm: "ยืนยัน", noUsers: "ไม่พบสมาชิก", access: "ไม่มีสิทธิ์",
+    lastSeen: "เข้าล่าสุด", never: "ไม่เคย",
   },
   en: {
     title: "User Management", total: "Total Users", search: "Search...",
@@ -41,6 +44,7 @@ const i18n: Record<Lang, Record<string, string>> = {
     deleteUser: "Delete", confirmDelete: "Delete this user? This cannot be undone.",
     confirmSetAdmin: "Grant admin role?", confirmRemoveAdmin: "Revoke admin role?",
     cancel: "Cancel", confirm: "Confirm", noUsers: "No users found", access: "Access denied",
+    lastSeen: "Last seen", never: "Never",
   },
   ko: {
     title: "회원 관리", total: "전체 회원", search: "검색...",
@@ -49,6 +53,7 @@ const i18n: Record<Lang, Record<string, string>> = {
     deleteUser: "삭제", confirmDelete: "이 회원을 삭제하시겠습니까? 되돌릴 수 없습니다.",
     confirmSetAdmin: "관리자로 지정하시겠습니까?", confirmRemoveAdmin: "관리자 권한을 해제하시겠습니까?",
     cancel: "취소", confirm: "확인", noUsers: "회원이 없습니다", access: "접근 권한이 없습니다",
+    lastSeen: "최근 접속", never: "없음",
   },
   ja: {
     title: "ユーザー管理", total: "ユーザー合計", search: "検索...",
@@ -57,6 +62,7 @@ const i18n: Record<Lang, Record<string, string>> = {
     deleteUser: "削除", confirmDelete: "このユーザーを削除しますか？元に戻せません。",
     confirmSetAdmin: "管理者に設定しますか？", confirmRemoveAdmin: "管理者権限を解除しますか？",
     cancel: "キャンセル", confirm: "確認", noUsers: "ユーザーが見つかりません", access: "アクセス拒否",
+    lastSeen: "最終ログイン", never: "なし",
   },
 };
 
@@ -69,8 +75,7 @@ export default function AdminUsersPage() {
   const { lang } = useApp();
   const t = i18n[(lang as Lang) || "en"];
 
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
+  const [profiles, setProfiles] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [target, setTarget] = useState<{ id: string; name: string; action: ActionType } | null>(null);
@@ -78,15 +83,18 @@ export default function AdminUsersPage() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: profs }, { data: roles }] = await Promise.all([
-      supabase.from("profiles")
-        .select("id, user_id, display_name, email, avatar_url, created_at")
-        .order("created_at", { ascending: false }),
-      (supabase as any).from("user_roles").select("user_id, role").eq("role", "admin"),
-    ]);
-    setProfiles((profs as Profile[]) || []);
-    setAdminIds(new Set((roles || []).map((r: any) => r.user_id)));
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-manage-user", {
+        body: { action: "list_users" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setProfiles(((data as any)?.users || []) as AdminUser[]);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -178,11 +186,14 @@ export default function AdminUsersPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((p) => {
-            const isUserAdmin = adminIds.has(p.user_id);
+            const isUserAdmin = p.is_admin;
             const isSelf = p.user_id === user?.id;
             const name = p.display_name || p.email || p.user_id.slice(0, 8);
+            const lastSeen = p.last_sign_in_at
+              ? new Date(p.last_sign_in_at).toLocaleString()
+              : t.never;
             return (
-              <div key={p.id} className="rounded-2xl border border-border bg-card p-3">
+              <div key={p.user_id} className="rounded-2xl border border-border bg-card p-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
                     {p.avatar_url ? (
@@ -202,10 +213,18 @@ export default function AdminUsersPage() {
                           {t.admin}
                         </Badge>
                       )}
+                      {p.provider && (
+                        <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                          {p.provider}
+                        </Badge>
+                      )}
                     </div>
                     {p.email && <p className="truncate text-xs text-muted-foreground">{p.email}</p>}
                     <p className="text-[10px] text-muted-foreground">
                       {t.joined}: {new Date(p.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {t.lastSeen}: {lastSeen}
                     </p>
                   </div>
                 </div>

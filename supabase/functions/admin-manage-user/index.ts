@@ -46,20 +46,66 @@ Deno.serve(async (req) => {
     }
 
     const { action, target_user_id } = await req.json();
-    if (!action || !target_user_id) {
+    if (!action) {
       return new Response(JSON.stringify({ error: "Missing params" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (action === "delete_user") {
+    if (action === "list_users") {
+      // Page through all auth users
+      const all: any[] = [];
+      let page = 1;
+      const perPage = 1000;
+      while (true) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+        if (error) throw error;
+        const users = data?.users || [];
+        all.push(...users);
+        if (users.length < perPage) break;
+        page++;
+        if (page > 20) break;
+      }
+
+      const ids = all.map((u) => u.id);
+      const [{ data: profs }, { data: roles }] = await Promise.all([
+        admin.from("profiles")
+          .select("user_id, display_name, avatar_url, created_at")
+          .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]),
+        admin.from("user_roles").select("user_id, role").eq("role", "admin"),
+      ]);
+      const profMap = new Map<string, any>();
+      (profs || []).forEach((p: any) => profMap.set(p.user_id, p));
+      const adminSet = new Set((roles || []).map((r: any) => r.user_id));
+
+      const merged = all.map((u: any) => {
+        const p = profMap.get(u.id) || {};
+        return {
+          user_id: u.id,
+          email: u.email || p.email || null,
+          display_name: p.display_name || u.user_metadata?.name || u.user_metadata?.full_name || null,
+          avatar_url: p.avatar_url || u.user_metadata?.avatar_url || null,
+          created_at: u.created_at,
+          last_sign_in_at: u.last_sign_in_at || null,
+          provider: u.app_metadata?.provider || null,
+          is_admin: adminSet.has(u.id),
+        };
+      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return new Response(JSON.stringify({ users: merged }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } else if (action === "delete_user") {
+      if (!target_user_id) throw new Error("Missing target");
       const { error } = await admin.auth.admin.deleteUser(target_user_id);
       if (error) throw error;
     } else if (action === "add_admin") {
+      if (!target_user_id) throw new Error("Missing target");
       const { error } = await admin.from("user_roles")
         .insert({ user_id: target_user_id, role: "admin" });
       if (error && !String(error.message).includes("duplicate")) throw error;
     } else if (action === "remove_admin") {
+      if (!target_user_id) throw new Error("Missing target");
       const { error } = await admin.from("user_roles")
         .delete().eq("user_id", target_user_id).eq("role", "admin");
       if (error) throw error;
