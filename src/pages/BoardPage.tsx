@@ -188,6 +188,22 @@ export default function BoardPage() {
         )}
       </div>
 
+      {boardKey === "support" && !composing && !editing && (
+        <button
+          onClick={() => navigate("/inquiry")}
+          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <HelpCircle className="h-5 w-5 text-primary" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-sm font-semibold text-foreground">{L("contact")}</span>
+            <span className="block text-xs text-muted-foreground">{L("contactDesc")}</span>
+          </span>
+          <span className="text-muted-foreground">›</span>
+        </button>
+      )}
+
       {composing && (
         <div className="mb-4 rounded-2xl border border-border bg-card p-4 space-y-3">
           <div>
