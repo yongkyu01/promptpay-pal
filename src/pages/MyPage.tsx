@@ -3,7 +3,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCircle, LogOut, QrCode, Wallet, Save } from "lucide-react";
+import { UserCircle, LogOut, QrCode, Wallet, Save, Megaphone, Headphones, FileText, HelpCircle, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -49,6 +49,29 @@ export default function MyPage() {
     setSaving(false);
     if (error) toast.error(error.message);
     else toast.success("✓");
+  };
+
+  const supportLabels = {
+    title: { th: "ฝ่ายสนับสนุน", en: "Support", ko: "고객지원", ja: "カスタマーサポート" },
+    notice: { th: "ประกาศ", en: "Notices", ko: "공지사항", ja: "お知らせ" },
+    center: { th: "ศูนย์ช่วยเหลือ", en: "Help Center", ko: "고객센터", ja: "カスタマーセンター" },
+    terms: { th: "ข้อกำหนดและนโยบาย", en: "Terms & Policies", ko: "약관 및 정책", ja: "規約・ポリシー" },
+    contact: { th: "ติดต่อเรา", en: "Contact Us", ko: "문의하기", ja: "お問い合わせ" },
+    deleteAccount: { th: "ลบบัญชี", en: "Delete Account", ko: "회원 탈퇴", ja: "退会" },
+  } as const;
+  const L = (k: keyof typeof supportLabels) => supportLabels[k][lang as "th" | "en" | "ko" | "ja"] ?? supportLabels[k].en;
+
+  const notImplemented = () => toast.info("Coming soon");
+
+  const handleDeleteAccount = () => {
+    const confirmMsg = {
+      th: "ต้องการลบบัญชีจริงหรือไม่?",
+      en: "Are you sure you want to delete your account?",
+      ko: "정말 회원 탈퇴하시겠습니까?",
+      ja: "本当に退会しますか？",
+    }[lang as "th" | "en" | "ko" | "ja"] ?? "Are you sure?";
+    if (!window.confirm(confirmMsg)) return;
+    toast.info("Coming soon");
   };
 
   return (
@@ -110,6 +133,60 @@ export default function MyPage() {
         >
           <LogOut className="h-4 w-4" />
           {t("signOut", lang)}
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-2 space-y-1">
+        <p className="px-3 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{L("title")}</p>
+        <button
+          onClick={notImplemented}
+          className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <Megaphone className="h-4 w-4 text-primary" />
+            {L("notice")}
+          </span>
+          <span className="text-muted-foreground">›</span>
+        </button>
+        <button
+          onClick={notImplemented}
+          className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <Headphones className="h-4 w-4 text-primary" />
+            {L("center")}
+          </span>
+          <span className="text-muted-foreground">›</span>
+        </button>
+        <button
+          onClick={notImplemented}
+          className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <FileText className="h-4 w-4 text-primary" />
+            {L("terms")}
+          </span>
+          <span className="text-muted-foreground">›</span>
+        </button>
+        <button
+          onClick={notImplemented}
+          className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <HelpCircle className="h-4 w-4 text-primary" />
+            {L("contact")}
+          </span>
+          <span className="text-muted-foreground">›</span>
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-2">
+        <button
+          onClick={handleDeleteAccount}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
+        >
+          <UserX className="h-4 w-4" />
+          {L("deleteAccount")}
         </button>
       </div>
     </div>
