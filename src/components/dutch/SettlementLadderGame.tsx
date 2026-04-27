@@ -491,7 +491,8 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                 placeholder={t("ladderSlotLabel", lang)}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Sum check */}
