@@ -298,7 +298,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
 
         {/* Cloud cover overlay */}
         <div
-          className={`absolute inset-x-0 top-[8%] h-[84%] transition-all duration-1000 ease-out ${
+          className={`absolute inset-x-0 top-[0%] h-[100%] transition-all duration-1000 ease-out ${
             cloudsLifted ? "pointer-events-none opacity-0 blur-md -translate-y-3 scale-105" : "opacity-100"
           }`}
           aria-hidden
@@ -310,25 +310,30 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              <radialGradient id="cloudFill" cx="50%" cy="50%" r="55%">
+              <radialGradient id="cloudFill" cx="50%" cy="50%" r="65%">
                 <stop offset="0%" stopColor="white" stopOpacity="1" />
-                <stop offset="45%" stopColor="white" stopOpacity="0.95" />
-                <stop offset="75%" stopColor="white" stopOpacity="0.45" />
+                <stop offset="60%" stopColor="white" stopOpacity="1" />
+                <stop offset="85%" stopColor="white" stopOpacity="0.7" />
                 <stop offset="100%" stopColor="white" stopOpacity="0" />
               </radialGradient>
               <filter id="cloudBlur" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="9" />
+                <feGaussianBlur stdDeviation="6" />
               </filter>
             </defs>
             <g fill="url(#cloudFill)" filter="url(#cloudBlur)" className="animate-cloud-drift">
-              <ellipse cx="60" cy="90" rx="55" ry="34" />
-              <ellipse cx="140" cy="75" rx="65" ry="38" />
-              <ellipse cx="225" cy="95" rx="70" ry="40" />
-              <ellipse cx="310" cy="78" rx="60" ry="36" />
-              <ellipse cx="370" cy="100" rx="55" ry="34" />
-              <ellipse cx="100" cy="125" rx="60" ry="32" />
-              <ellipse cx="200" cy="130" rx="65" ry="34" />
-              <ellipse cx="290" cy="125" rx="60" ry="32" />
+              <ellipse cx="50" cy="60" rx="65" ry="42" />
+              <ellipse cx="140" cy="50" rx="75" ry="46" />
+              <ellipse cx="225" cy="65" rx="80" ry="48" />
+              <ellipse cx="310" cy="52" rx="72" ry="44" />
+              <ellipse cx="370" cy="70" rx="65" ry="42" />
+              <ellipse cx="60" cy="100" rx="68" ry="42" />
+              <ellipse cx="150" cy="105" rx="72" ry="44" />
+              <ellipse cx="240" cy="100" rx="78" ry="46" />
+              <ellipse cx="330" cy="105" rx="70" ry="44" />
+              <ellipse cx="100" cy="145" rx="70" ry="40" />
+              <ellipse cx="200" cy="150" rx="78" ry="42" />
+              <ellipse cx="300" cy="145" rx="72" ry="40" />
+              <ellipse cx="370" cy="150" rx="60" ry="38" />
             </g>
           </svg>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
