@@ -288,8 +288,11 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             const endY = TOP_PAD + (path.length - 1) * ROW_H;
             // Unique key forces remount → restarts SMIL animation
             const animKey = `anim-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
+            const pathId = `ladder-path-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
             return (
               <g key={animKey}>
+                {/* Hidden path used as motion reference */}
+                <path id={pathId} d={d} fill="none" stroke="none" />
                 {/* Trail being drawn */}
                 <path
                   d={d}
@@ -315,17 +318,35 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                 </path>
                 {/* Traveler emoji following the path */}
                 <g>
-                  <circle r={14} fill={color} opacity={0.25}>
-                    <animateMotion dur={`${PATH_REVEAL_MS}ms`} fill="freeze" rotate="0" path={d} />
+                  <circle cx={0} cy={0} r={14} fill={color} opacity={0.25}>
+                    <animateMotion
+                      dur={`${PATH_REVEAL_MS}ms`}
+                      begin="0s"
+                      fill="freeze"
+                      rotate="0"
+                      calcMode="linear"
+                    >
+                      <mpath href={`#${pathId}`} />
+                    </animateMotion>
                   </circle>
                   <text
+                    x={0}
+                    y={0}
                     fontSize={22}
                     textAnchor="middle"
                     dominantBaseline="central"
                     style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }}
                   >
                     {traveler}
-                    <animateMotion dur={`${PATH_REVEAL_MS}ms`} fill="freeze" rotate="0" path={d} />
+                    <animateMotion
+                      dur={`${PATH_REVEAL_MS}ms`}
+                      begin="0s"
+                      fill="freeze"
+                      rotate="0"
+                      calcMode="linear"
+                    >
+                      <mpath href={`#${pathId}`} />
+                    </animateMotion>
                   </text>
                 </g>
                 {/* Arrival burst at the destination */}
