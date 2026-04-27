@@ -4,21 +4,40 @@ import { useApp } from "@/context/AppContext";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { LogIn, UserPlus, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
   const { lang } = useApp();
+  const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+
+  const L = {
+    agreeTerms: { th: "ข้อกำหนดในการให้บริการ", en: "Terms of Service", ko: "서비스 이용 약관 동의 (필수)", ja: "利用規約に同意 (必須)" },
+    agreePrivacy: { th: "นโยบายความเป็นส่วนตัว", en: "Privacy Policy", ko: "개인정보 처리방침 동의 (필수)", ja: "プライバシーポリシーに同意 (必須)" },
+    view: { th: "ดู", en: "View", ko: "보기", ja: "表示" },
+    mustAgree: { th: "กรุณายอมรับข้อกำหนดและนโยบาย", en: "Please agree to the Terms and Privacy Policy", ko: "약관 및 개인정보 처리방침에 동의해주세요", ja: "規約とプライバシーポリシーに同意してください" },
+  } as const;
+  const tr = (k: keyof typeof L) => (L[k] as any)[lang] ?? (L[k] as any).en;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSignUp && (!agreeTerms || !agreePrivacy)) {
+      toast.error(tr("mustAgree"));
+      return;
+    }
     setLoading(true);
     try {
       if (isSignUp) {
         await signUp(email, password);
+        try {
+          localStorage.setItem("kebdee_pending_consent", JSON.stringify({ terms: true, privacy: true, at: new Date().toISOString() }));
+        } catch {}
         toast.success(lang === "th" ? "สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมล" : "Sign up successful! Please check your email.");
       } else {
         await signIn(email, password);
@@ -88,6 +107,39 @@ export default function AuthPage() {
               ? (lang === "th" ? "สมัครสมาชิก" : "Sign Up")
               : (lang === "th" ? "เข้าสู่ระบบ" : "Sign In")}
           </button>
+
+          {isSignUp && (
+            <div className="space-y-2 pt-1">
+              <label className="flex items-start gap-2 text-xs text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="flex-1">
+                  {tr("agreeTerms")}{" "}
+                  <button type="button" onClick={() => navigate("/board/terms")} className="text-primary underline">
+                    {tr("view")}
+                  </button>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-xs text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreePrivacy}
+                  onChange={(e) => setAgreePrivacy(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="flex-1">
+                  {tr("agreePrivacy")}{" "}
+                  <button type="button" onClick={() => navigate("/board/terms")} className="text-primary underline">
+                    {tr("view")}
+                  </button>
+                </span>
+              </label>
+            </div>
+          )}
         </form>
 
         <div className="flex items-center gap-3">

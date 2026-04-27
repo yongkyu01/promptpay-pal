@@ -179,7 +179,9 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          privacy_agreed_at: string | null
           promptpay_id: string | null
+          terms_agreed_at: string | null
           updated_at: string
           user_id: string
         }
@@ -189,7 +191,9 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          privacy_agreed_at?: string | null
           promptpay_id?: string | null
+          terms_agreed_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -199,7 +203,9 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          privacy_agreed_at?: string | null
           promptpay_id?: string | null
+          terms_agreed_at?: string | null
           updated_at?: string
           user_id?: string
         }

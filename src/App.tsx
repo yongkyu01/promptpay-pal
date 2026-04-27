@@ -20,6 +20,7 @@ import DutchSplitPage from "@/pages/DutchSplitPage";
 import MyPage from "@/pages/MyPage";
 import BoardPage from "@/pages/BoardPage";
 import DeleteAccountPage from "@/pages/DeleteAccountPage";
+import TermsConsentGate from "@/components/TermsConsentGate";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ function AppContent() {
   }
 
   return (
+    <TermsConsentGate>
     <div className="min-h-screen bg-background">
       <AppHeader />
       <Routes>
@@ -60,6 +62,7 @@ function AppContent() {
       <AddExpenseFAB />
       <BottomTabBar />
     </div>
+    </TermsConsentGate>
   );
 }
 
