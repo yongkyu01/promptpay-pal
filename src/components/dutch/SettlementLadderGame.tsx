@@ -35,7 +35,7 @@ const TOP_PAD = 12;
 const BOTTOM_PAD = 12;
 
 // Path reveal animation duration (ms)
-const PATH_REVEAL_MS = 2600;
+const PATH_REVEAL_MS = 5200;
 
 // Color palette for player tracks (HSL via CSS vars when available, fallback to fixed hues)
 const TRACK_COLORS = [
@@ -434,9 +434,16 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
         </div>
 
         {/* Bottom: editable slots */}
-        <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
+        <div
+          className="mt-3 grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, 4)}, minmax(0, 1fr))` }}
+        >
           {slots.map((slot, i) => (
             <div key={`slot-${i}`} className="rounded-xl border border-border bg-background p-2">
+              <div className="mb-1 truncate text-center text-[10px] font-semibold text-muted-foreground">
+                <span className="mr-0.5">{TRAVELERS[i % TRAVELERS.length]}</span>
+                {members[i]?.name ?? `#${i + 1}`}
+              </div>
               <Input
                 type="number"
                 inputMode="decimal"
