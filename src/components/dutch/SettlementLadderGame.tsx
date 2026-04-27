@@ -295,7 +295,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
 
         {/* Cloud cover overlay */}
         <div
-          className={`pointer-events-none absolute inset-x-0 top-1/4 h-1/2 transition-all duration-700 ease-out ${
+          className={`pointer-events-none absolute inset-x-0 top-[10%] h-[80%] transition-all duration-700 ease-out ${
             cloudsLifted ? "opacity-0 -translate-y-4 scale-110" : "opacity-100"
           }`}
           aria-hidden
