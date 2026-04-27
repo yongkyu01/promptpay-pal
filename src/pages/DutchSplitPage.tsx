@@ -30,6 +30,7 @@ export default function DutchSplitPage() {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [hostPromptpay, setHostPromptpay] = useState<string | null>(null);
   const [splitMethod, setSplitMethod] = useState<"equal" | "ladder">("equal");
+  const [ladderAssignments, setLadderAssignments] = useState<Record<string, number>>({});
 
   const { data: split } = useQuery({
     queryKey: ["split", id],
@@ -225,7 +226,14 @@ export default function DutchSplitPage() {
     // If using ladder, keep the per-member amounts that were assigned by the
     // ladder result (already written to split_members.amount_due via onApply).
     // Only re-write member totals when using the equal/item-based split.
-    if (splitMethod !== "ladder") {
+    if (splitMethod === "ladder") {
+      const updates = members.map((m) =>
+        supabase.from("split_members").update({
+          amount_due: Number((ladderAssignments[m.id] || 0).toFixed(2)),
+        }).eq("id", m.id)
+      );
+      await Promise.all(updates);
+    } else {
       const updates = members.map((m) =>
         supabase.from("split_members").update({
           amount_due: Number((memberTotals.get(m.id) || 0).toFixed(2)),
@@ -242,7 +250,7 @@ export default function DutchSplitPage() {
     const me = members.find((m) => m.is_owner);
     const myShare = me
       ? splitMethod === "ladder"
-        ? Number((me as any).amount_due || 0)
+        ? Number((ladderAssignments[me.id] ?? (me as any).amount_due ?? 0) || 0)
         : memberTotals.get(me.id) || 0
       : 0;
     if (myShare > 0) {
@@ -499,7 +507,25 @@ export default function DutchSplitPage() {
           lang={lang}
           members={members.map((member) => ({ id: member.id, name: member.name }))}
           total={total}
+          onAssignmentsChange={(assignments) => {
+            if (!assignments) {
+              setLadderAssignments({});
+              return;
+            }
+            setLadderAssignments(
+              assignments.reduce<Record<string, number>>((acc, current) => {
+                acc[current.memberId] = current.amount;
+                return acc;
+              }, {})
+            );
+          }}
           onApply={async (assignments) => {
+            setLadderAssignments(
+              assignments.reduce<Record<string, number>>((acc, current) => {
+                acc[current.memberId] = current.amount;
+                return acc;
+              }, {})
+            );
             await Promise.all(
               assignments.map((a) =>
                 supabase.from("split_members").update({ amount_due: a.amount }).eq("id", a.memberId)

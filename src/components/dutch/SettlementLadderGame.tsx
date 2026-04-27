@@ -20,6 +20,7 @@ interface SettlementLadderGameProps {
   members: LadderMember[];
   total?: number;
   onApply?: (assignments: { memberId: string; amount: number; label: string }[]) => void;
+  onAssignmentsChange?: (assignments: { memberId: string; amount: number; label: string }[] | null) => void;
 }
 
 type LadderRun = {
@@ -52,7 +53,7 @@ const TRACK_COLORS = [
 // Animal traveler emojis – one per member slot
 const TRAVELERS = ["🐰", "🐶", "🐱", "🦊", "🐼", "🐵", "🐯", "🐻"];
 
-export default function SettlementLadderGame({ lang, members, total = 0, onApply }: SettlementLadderGameProps) {
+export default function SettlementLadderGame({ lang, members, total = 0, onApply, onAssignmentsChange }: SettlementLadderGameProps) {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [rungs, setRungs] = useState<boolean[][]>([]);
   const [run, setRun] = useState<LadderRun | null>(null);
@@ -248,12 +249,23 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setCloudsLifted(false);
   };
 
-  const apply = () => {
-    if (!run || !onApply) return;
-    const assignments = members.map((m, i) => {
-      const slot = slots[run.destinations[i]];
+  const buildAssignments = (activeRun = run, activeSlots = slots) => {
+    if (!activeRun) return null;
+    return members.map((m, i) => {
+      const slot = activeSlots[activeRun.destinations[i]];
       return { memberId: m.id, amount: Number((slot?.amount || 0).toFixed(2)), label: slot?.label || "" };
     });
+  };
+
+  useEffect(() => {
+    if (!onAssignmentsChange) return;
+    onAssignmentsChange(buildAssignments());
+  }, [members, onAssignmentsChange, run, slots]);
+
+  const apply = () => {
+    if (!onApply) return;
+    const assignments = buildAssignments();
+    if (!assignments) return;
     onApply(assignments);
   };
 
