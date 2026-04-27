@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 type Lang = "th" | "en" | "ko" | "ja";
@@ -22,6 +22,7 @@ interface Post {
 const LABELS = {
   notice: { th: "ประกาศ", en: "Notices", ko: "공지사항", ja: "お知らせ" },
   support: { th: "ศูนย์ช่วยเหลือ", en: "Help Center", ko: "고객센터", ja: "カスタマーセンター" },
+  terms: { th: "ข้อกำหนดและนโยบาย", en: "Terms & Policies", ko: "약관 및 정책", ja: "規約・ポリシー" },
   back: { th: "กลับ", en: "Back", ko: "뒤로", ja: "戻る" },
   empty: { th: "ยังไม่มีโพสต์", en: "No posts yet", ko: "게시글이 없어요", ja: "まだ投稿がありません" },
   newPost: { th: "เขียนใหม่", en: "New Post", ko: "새 글", ja: "新規作成" },
@@ -35,7 +36,7 @@ const LABELS = {
 } as const;
 
 export default function BoardPage() {
-  const { board } = useParams<{ board: "notice" | "support" }>();
+  const { board } = useParams<{ board: "notice" | "support" | "terms" }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { lang } = useApp();
@@ -50,8 +51,11 @@ export default function BoardPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const boardKey = (board === "support" ? "support" : "notice") as "notice" | "support";
-  const Icon = boardKey === "notice" ? Megaphone : Headphones;
+  const boardKey = (board === "support" || board === "terms" ? board : "notice") as
+    | "notice"
+    | "support"
+    | "terms";
+  const Icon = boardKey === "notice" ? Megaphone : boardKey === "support" ? Headphones : FileText;
 
   const load = async () => {
     setLoading(true);
