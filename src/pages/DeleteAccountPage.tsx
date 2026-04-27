@@ -42,7 +42,7 @@ const T = {
 
 export default function DeleteAccountPage() {
   const { lang } = useApp();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -52,25 +52,13 @@ export default function DeleteAccountPage() {
     if (!user || !agreed || deleting) return;
     setDeleting(true);
     try {
-      const uid = user.id;
-      // Delete user-owned rows. RLS scopes deletes to current user.
-      await Promise.all([
-        supabase.from("expenses").delete().eq("user_id", uid),
-        supabase.from("budgets").delete().eq("user_id", uid),
-        supabase.from("split_items").delete().eq("user_id", uid),
-        supabase.from("split_members").delete().eq("user_id", uid),
-        supabase.from("friends").delete().eq("user_id", uid),
-        supabase.from("slips").delete().eq("user_id", uid),
-      ]);
-      await supabase.from("splits").delete().eq("user_id", uid);
-      // profiles has no DELETE policy; clear personal fields instead.
-      await supabase
-        .from("profiles")
-        .update({ display_name: null, promptpay_id: null, avatar_url: null, email: null })
-        .eq("user_id", uid);
+      // Call edge function to permanently delete data + auth account
+      const { data, error } = await supabase.functions.invoke("delete-account");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success(L("successMsg"));
-      await signOut();
+      await supabase.auth.signOut();
       navigate("/", { replace: true });
     } catch (e: any) {
       toast.error(e?.message || L("errorMsg"));
