@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type Lang = "th" | "en" | "ko" | "ja";
@@ -61,6 +61,13 @@ const LABELS = {
   edit: { th: "แก้ไข", en: "Edit", ko: "수정", ja: "編集" },
   delete: { th: "ลบ", en: "Delete", ko: "삭제", ja: "削除" },
   confirmDelete: { th: "ลบโพสต์นี้?", en: "Delete this post?", ko: "이 글을 삭제할까요?", ja: "この投稿を削除しますか？" },
+  contact: { th: "ติดต่อเรา", en: "Contact Us", ko: "문의하기", ja: "お問い合わせ" },
+  contactDesc: {
+    th: "ส่งคำถามถึงทีมงานโดยตรง",
+    en: "Send your question directly to our team",
+    ko: "운영팀에 직접 문의를 남겨보세요",
+    ja: "運営チームに直接お問い合わせください",
+  },
 } as const;
 
 export default function BoardPage() {
@@ -180,6 +187,22 @@ export default function BoardPage() {
           </button>
         )}
       </div>
+
+      {boardKey === "support" && !composing && !editing && (
+        <button
+          onClick={() => navigate("/inquiry")}
+          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <HelpCircle className="h-5 w-5 text-primary" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-sm font-semibold text-foreground">{L("contact")}</span>
+            <span className="block text-xs text-muted-foreground">{L("contactDesc")}</span>
+          </span>
+          <span className="text-muted-foreground">›</span>
+        </button>
+      )}
 
       {composing && (
         <div className="mb-4 rounded-2xl border border-border bg-card p-4 space-y-3">
