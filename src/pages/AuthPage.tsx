@@ -17,7 +17,7 @@ import {
 } from "@/lib/authRelay";
 
 const PUBLISHED_URL = "https://promptpay-buddy.lovable.app";
-const LINE_REDIRECT_URI = `${PUBLISHED_URL}/`;
+const LINE_REDIRECT_URI = PUBLISHED_URL;
 
 const webViewWarnings: Record<string, string> = {
   th: "เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบบางประเภท กรุณาเปิดใน Chrome หรือ Safari",
