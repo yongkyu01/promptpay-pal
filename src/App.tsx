@@ -19,6 +19,7 @@ import DutchPage from "@/pages/DutchPage";
 import DutchSplitPage from "@/pages/DutchSplitPage";
 import MyPage from "@/pages/MyPage";
 import BoardPage from "@/pages/BoardPage";
+import DeleteAccountPage from "@/pages/DeleteAccountPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ function AppContent() {
         <Route path="/dutch/:id" element={<DutchSplitPage />} />
         <Route path="/me" element={<MyPage />} />
         <Route path="/board/:board" element={<BoardPage />} />
+        <Route path="/me/delete" element={<DeleteAccountPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <AddExpenseFAB />
