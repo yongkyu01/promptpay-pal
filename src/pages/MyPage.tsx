@@ -55,8 +55,7 @@ export default function MyPage() {
     <div className="mx-auto max-w-lg space-y-4 px-4 py-4 pb-24 animate-slide-up">
       <div className="rounded-2xl gradient-primary p-6 text-center shadow-primary">
         <UserCircle className="mx-auto h-14 w-14 text-white/90" />
-        <p className="mt-2 text-sm text-white/80">{user?.email}</p>
-        <p className="text-base font-semibold text-white">{displayName || t("myAccount", lang)}</p>
+        <p className="mt-2 text-base font-semibold text-white">{displayName || t("myAccount", lang)}</p>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
