@@ -69,6 +69,12 @@ export default function DutchSplitPage() {
       .then(({ data }) => setHostPromptpay((data as any)?.promptpay_id ?? null));
   }, [user]);
 
+  // Restore split method from server (so settled view shows ladder results)
+  useEffect(() => {
+    const m = (split as any)?.split_method;
+    if (m === "ladder" || m === "equal") setSplitMethod(m);
+  }, [split]);
+
   // Calculations
   const subtotal = useMemo(() => items.reduce((s, i) => s + Number(i.total), 0), [items]);
   const vatAmount = Number(split?.vat ?? 0);
@@ -216,21 +222,29 @@ export default function DutchSplitPage() {
 
   const finalize = async () => {
     if (!user || !id || !split) return;
-    // Save member totals
-    const updates = members.map((m) =>
-      supabase.from("split_members").update({
-        amount_due: Number((memberTotals.get(m.id) || 0).toFixed(2)),
-      }).eq("id", m.id)
-    );
-    await Promise.all(updates);
-    // Update split totals + status
+    // If using ladder, keep the per-member amounts that were assigned by the
+    // ladder result (already written to split_members.amount_due via onApply).
+    // Only re-write member totals when using the equal/item-based split.
+    if (splitMethod !== "ladder") {
+      const updates = members.map((m) =>
+        supabase.from("split_members").update({
+          amount_due: Number((memberTotals.get(m.id) || 0).toFixed(2)),
+        }).eq("id", m.id)
+      );
+      await Promise.all(updates);
+    }
+    // Update split totals + status + chosen method
     await supabase.from("splits").update({
-      subtotal, total, status: "settled",
-    }).eq("id", id);
+      subtotal, total, status: "settled", split_method: splitMethod,
+    } as any).eq("id", id);
 
-    // Save my share to expenses (food)
+    // Save my share to expenses (food) — pick from the source that matches the chosen method
     const me = members.find((m) => m.is_owner);
-    const myShare = me ? memberTotals.get(me.id) || 0 : 0;
+    const myShare = me
+      ? splitMethod === "ladder"
+        ? Number((me as any).amount_due || 0)
+        : memberTotals.get(me.id) || 0
+      : 0;
     if (myShare > 0) {
       const today = new Date().toISOString().slice(0, 10);
       await supabase.from("expenses").insert({
