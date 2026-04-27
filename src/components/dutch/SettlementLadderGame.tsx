@@ -202,16 +202,30 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                 type="button"
                 onClick={() => {
                   if (activeMember !== null) return;
-                  if (!run) return;
+                  // Ensure ladder exists and clouds are lifted
+                  const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
+                  if (!rungs.length) setRungs(r);
+                  setCloudsLifted(true);
+                  // Build (or reuse) run so destinations are stable
+                  let currentRun = run;
+                  if (!currentRun) {
+                    const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
+                    const destinations = paths.map((p) => p[p.length - 1]);
+                    currentRun = { paths, destinations };
+                    setRun(currentRun);
+                    setRevealed(members.map(() => false));
+                  }
                   setActiveMember(index);
                   setRevealed((prev) => {
-                    const next = [...prev];
+                    const base = prev.length === members.length ? prev : members.map(() => false);
+                    const next = [...base];
                     next[index] = false;
                     return next;
                   });
                   window.setTimeout(() => {
                     setRevealed((prev) => {
-                      const next = [...prev];
+                      const base = prev.length === members.length ? prev : members.map(() => false);
+                      const next = [...base];
                       next[index] = true;
                       return next;
                     });
