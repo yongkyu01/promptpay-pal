@@ -63,16 +63,7 @@ export default function MyPage() {
 
   const notImplemented = () => toast.info("Coming soon");
 
-  const handleDeleteAccount = () => {
-    const confirmMsg = {
-      th: "ต้องการลบบัญชีจริงหรือไม่?",
-      en: "Are you sure you want to delete your account?",
-      ko: "정말 회원 탈퇴하시겠습니까?",
-      ja: "本当に退会しますか？",
-    }[lang as "th" | "en" | "ko" | "ja"] ?? "Are you sure?";
-    if (!window.confirm(confirmMsg)) return;
-    toast.info("Coming soon");
-  };
+  const handleDeleteAccount = () => navigate("/me/delete");
 
   return (
     <div className="mx-auto max-w-lg space-y-4 px-4 py-4 pb-24 animate-slide-up">
