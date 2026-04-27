@@ -4,7 +4,7 @@ import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, Trash2, Users as UsersIcon, Sparkles, QrCode, PartyPopper, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import generatePayload from "promptpay-qr";
@@ -160,6 +160,41 @@ export default function DutchSplitPage() {
     queryClient.invalidateQueries({ queryKey: ["split_items", id] });
   };
 
+  // Local in-flight edits so totals update instantly while user types,
+  // and DB writes are debounced.
+  const [edits, setEdits] = useState<Record<string, { quantity?: number; unit_price?: number; name?: string }>>({});
+  const editTimers = useRef<Record<string, number>>({});
+  const queueItemUpdate = (itemId: string, patch: { quantity?: number; unit_price?: number; name?: string }) => {
+    setEdits((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }));
+    if (editTimers.current[itemId]) window.clearTimeout(editTimers.current[itemId]);
+    editTimers.current[itemId] = window.setTimeout(() => {
+      const item = items.find((i) => i.id === itemId);
+      if (!item) return;
+      const merged = { ...item, ...edits[itemId], ...patch };
+      void updateItem(itemId, {
+        name: merged.name,
+        quantity: Math.max(1, Number(merged.quantity) || 1),
+        unit_price: Number(merged.unit_price) || 0,
+      });
+    }, 350);
+  };
+  // Clear local edits when fresh server data arrives matching the queued values
+  useEffect(() => {
+    setEdits((prev) => {
+      const next: typeof prev = {};
+      for (const [id, e] of Object.entries(prev)) {
+        const item = items.find((i) => i.id === id);
+        if (!item) continue;
+        const same =
+          (e.quantity == null || Number(item.quantity) === Number(e.quantity)) &&
+          (e.unit_price == null || Number(item.unit_price) === Number(e.unit_price)) &&
+          (e.name == null || item.name === e.name);
+        if (!same) next[id] = e;
+      }
+      return next;
+    });
+  }, [items]);
+
   const removeItem = async (itemId: string) => {
     await supabase.from("split_items").delete().eq("id", itemId);
     queryClient.invalidateQueries({ queryKey: ["split_items", id] });
@@ -293,13 +328,18 @@ export default function DutchSplitPage() {
           )}
           {items.map((it) => {
             const assigned: string[] = Array.isArray(it.assigned_member_ids) ? (it.assigned_member_ids as any[]).map(String) : [];
+            const e = edits[it.id] || {};
+            const liveQty = e.quantity != null ? e.quantity : Number(it.quantity);
+            const liveUnit = e.unit_price != null ? e.unit_price : Number(it.unit_price);
+            const liveName = e.name != null ? e.name : it.name;
+            const liveTotal = (Number(liveUnit) || 0) * (Number(liveQty) || 0);
             return (
               <div key={it.id} className="rounded-xl bg-secondary/40 p-3 space-y-2">
                 {/* Row 1: name + delete */}
                 <div className="flex items-center gap-2">
                   <input
-                    defaultValue={it.name}
-                    onBlur={(e) => e.target.value !== it.name && updateItem(it.id, { name: e.target.value })}
+                    value={liveName}
+                    onChange={(ev) => queueItemUpdate(it.id, { name: ev.target.value })}
                     disabled={isSettled}
                     className="flex-1 min-w-0 rounded-md bg-background px-2 py-1 text-sm font-medium border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
                   />
@@ -314,10 +354,10 @@ export default function DutchSplitPage() {
                   <input
                     type="number"
                     inputMode="decimal"
-                    defaultValue={it.quantity}
-                    onBlur={(e) => {
-                      const q = Math.max(1, Number(e.target.value) || 1);
-                      if (q !== it.quantity) updateItem(it.id, { quantity: q, unit_price: it.unit_price });
+                    value={liveQty}
+                    onChange={(ev) => {
+                      const q = Math.max(1, Number(ev.target.value) || 1);
+                      queueItemUpdate(it.id, { quantity: q });
                     }}
                     disabled={isSettled}
                     className="w-12 shrink-0 rounded-md bg-background px-1.5 py-1 text-sm text-center border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
@@ -326,17 +366,17 @@ export default function DutchSplitPage() {
                   <input
                     type="number"
                     inputMode="decimal"
-                    defaultValue={Number(it.unit_price)}
-                    onBlur={(e) => {
-                      const up = Number(e.target.value) || 0;
-                      if (up !== Number(it.unit_price)) updateItem(it.id, { unit_price: up, quantity: it.quantity });
+                    value={liveUnit}
+                    onChange={(ev) => {
+                      const up = Number(ev.target.value) || 0;
+                      queueItemUpdate(it.id, { unit_price: up });
                     }}
                     disabled={isSettled}
                     className="flex-1 min-w-0 rounded-md bg-background px-2 py-1 text-sm text-right border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
                   />
                   <span className="text-xs text-muted-foreground shrink-0">=</span>
                   <span className="w-24 shrink-0 rounded-md bg-background/60 px-2 py-1 text-sm text-right font-semibold border border-border">
-                    ฿{Number(it.total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ฿{liveTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 {/* Assignment chips */}
