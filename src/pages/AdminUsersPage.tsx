@@ -178,11 +178,14 @@ export default function AdminUsersPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((p) => {
-            const isUserAdmin = adminIds.has(p.user_id);
+            const isUserAdmin = p.is_admin;
             const isSelf = p.user_id === user?.id;
             const name = p.display_name || p.email || p.user_id.slice(0, 8);
+            const lastSeen = p.last_sign_in_at
+              ? new Date(p.last_sign_in_at).toLocaleString()
+              : t.never;
             return (
-              <div key={p.id} className="rounded-2xl border border-border bg-card p-3">
+              <div key={p.user_id} className="rounded-2xl border border-border bg-card p-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
                     {p.avatar_url ? (
@@ -202,10 +205,18 @@ export default function AdminUsersPage() {
                           {t.admin}
                         </Badge>
                       )}
+                      {p.provider && (
+                        <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                          {p.provider}
+                        </Badge>
+                      )}
                     </div>
                     {p.email && <p className="truncate text-xs text-muted-foreground">{p.email}</p>}
                     <p className="text-[10px] text-muted-foreground">
                       {t.joined}: {new Date(p.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {t.lastSeen}: {lastSeen}
                     </p>
                   </div>
                 </div>
