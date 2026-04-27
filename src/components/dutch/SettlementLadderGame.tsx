@@ -586,6 +586,25 @@ function buildPolyline(path: number[]): string {
   return pts.join(" ");
 }
 
+/** Same waypoints as buildPolyline but as an SVG path "M x,y L x,y ..." string for animateMotion. */
+function buildSvgPath(path: number[]): string {
+  const pts: Array<[number, number]> = [];
+  pts.push([path[0] * COL_W + COL_W / 2, TOP_PAD]);
+  for (let i = 1; i < path.length; i++) {
+    const prevCol = path[i - 1];
+    const curCol = path[i];
+    const rowMidY = TOP_PAD + (i - 1) * ROW_H + ROW_H / 2;
+    if (prevCol !== curCol) {
+      pts.push([prevCol * COL_W + COL_W / 2, rowMidY]);
+      pts.push([curCol * COL_W + COL_W / 2, rowMidY]);
+    }
+    pts.push([curCol * COL_W + COL_W / 2, TOP_PAD + i * ROW_H]);
+  }
+  return pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`)
+    .join(" ");
+}
+
 function estimateLength(path: number[]): number {
   // Rough overestimate so dasharray fully hides initially
   return (path.length * ROW_H + path.length * COL_W) * 2;
