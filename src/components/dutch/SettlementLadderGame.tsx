@@ -156,8 +156,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setActiveMember(index);
     setProgress(0);
     setArrived((prev) => {
-      const base = prev.length === members.length ? [...prev] : members.map(() => false);
-      base[index] = false;
+      const base = members.map((_, i) => (prev[i] === true && i !== index));
       return base;
     });
 
@@ -175,15 +174,14 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
         rafRef.current = null;
         arrivalTimerRef.current = window.setTimeout(() => {
           setArrived((prev) => {
-            const base = prev.length === members.length ? [...prev] : members.map(() => false);
-            base[index] = true;
+            const base = members.map((_, i) => (i === index ? true : prev[i] === true));
             return base;
           });
           if (activeMemberRef.current === index) {
             activeMemberRef.current = null;
             setActiveMember(null);
           }
-        }, 120);
+        }, 60);
       }
     };
     rafRef.current = requestAnimationFrame(tick);
