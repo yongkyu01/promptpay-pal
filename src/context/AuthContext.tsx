@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { describeRelayType, restoreRelaySession } from "@/lib/relaySession";
+import { normalizeRelayId } from "@/lib/authRelay";
 
 interface AuthState {
   user: User | null;
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const pollRelay = async () => {
       if (cancelled || verified) return;
-      const relayId = localStorage.getItem("line_relay_state");
+      const relayId = normalizeRelayId(localStorage.getItem("line_relay_state"));
       if (!relayId) return;
 
       const { data: { session: cur } } = await supabase.auth.getSession();
