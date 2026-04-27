@@ -5,6 +5,12 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { LogIn, UserPlus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  isNative,
+  NATIVE_REDIRECT_URI,
+  openOAuthUrlNative,
+  setSessionFromCallbackUrl,
+} from "@/lib/nativeAuth";
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -150,10 +156,32 @@ export default function AuthPage() {
 
         <button
           onClick={async () => {
-            const { error } = await lovable.auth.signInWithOAuth("google", {
-              redirect_uri: window.location.origin,
-            });
-            if (error) toast.error(error.message);
+            try {
+              if (isNative()) {
+                // Native: use deep-link redirect, open in system browser, then
+                // capture the callback URL and set the Supabase session.
+                const result = await lovable.auth.signInWithOAuth("google", {
+                  redirect_uri: NATIVE_REDIRECT_URI,
+                });
+                if (result.error) {
+                  toast.error(result.error.message);
+                  return;
+                }
+                // The lovable SDK returns a URL to open externally on native.
+                // Fallback: if SDK already handled redirect (web), bail out.
+                const oauthUrl = (result as any).url as string | undefined;
+                if (!oauthUrl) return;
+                const callback = await openOAuthUrlNative(oauthUrl);
+                await setSessionFromCallbackUrl(callback);
+              } else {
+                const { error } = await lovable.auth.signInWithOAuth("google", {
+                  redirect_uri: window.location.origin,
+                });
+                if (error) toast.error(error.message);
+              }
+            } catch (e: any) {
+              toast.error(e?.message ?? "Google login failed");
+            }
           }}
           className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
         >
@@ -167,12 +195,21 @@ export default function AuthPage() {
         </button>
 
         <button
-          onClick={() => {
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const callbackUrl = `${supabaseUrl}/functions/v1/line-auth?action=callback`;
-            const appRedirect = window.location.origin;
-            const loginUrl = `${supabaseUrl}/functions/v1/line-auth?action=login&redirect_uri=${encodeURIComponent(callbackUrl)}&app_redirect=${encodeURIComponent(appRedirect)}`;
-            window.location.href = loginUrl;
+          onClick={async () => {
+            try {
+              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+              const callbackUrl = `${supabaseUrl}/functions/v1/line-auth?action=callback`;
+              const appRedirect = isNative() ? NATIVE_REDIRECT_URI : window.location.origin;
+              const loginUrl = `${supabaseUrl}/functions/v1/line-auth?action=login&redirect_uri=${encodeURIComponent(callbackUrl)}&app_redirect=${encodeURIComponent(appRedirect)}`;
+              if (isNative()) {
+                const callback = await openOAuthUrlNative(loginUrl);
+                await setSessionFromCallbackUrl(callback);
+              } else {
+                window.location.href = loginUrl;
+              }
+            } catch (e: any) {
+              toast.error(e?.message ?? "LINE login failed");
+            }
           }}
           className="flex w-full items-center justify-center gap-3 rounded-xl py-3 text-sm font-medium text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: "#06C755" }}
