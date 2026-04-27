@@ -42,7 +42,7 @@ const T = {
 
 export default function DeleteAccountPage() {
   const { lang } = useApp();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [deleting, setDeleting] = useState(false);
