@@ -273,7 +273,10 @@ export default function DutchSplitPage() {
   const summaryMembers = members.map((m) => ({
     id: m.id,
     name: m.name,
-    amount: memberTotals.get(m.id) || 0,
+    amount:
+      splitMethod === "ladder"
+        ? Number((m as any).amount_due || 0)
+        : memberTotals.get(m.id) || 0,
     isOwner: m.is_owner,
   }));
 
@@ -502,6 +505,9 @@ export default function DutchSplitPage() {
                 supabase.from("split_members").update({ amount_due: a.amount }).eq("id", a.memberId)
               )
             );
+            // Persist the chosen method so refresh / settled view uses ladder amounts
+            await supabase.from("splits").update({ split_method: "ladder" } as any).eq("id", id!);
+            queryClient.invalidateQueries({ queryKey: ["split", id] });
             queryClient.invalidateQueries({ queryKey: ["split_members", id] });
             toast.success(t("ladderApplied", lang));
           }}
