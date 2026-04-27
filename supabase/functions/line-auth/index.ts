@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,67 +6,46 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const LINE_AUTH_URL = "https://access.line.me/oauth2/v2.1/authorize";
-const LINE_TOKEN_URL = "https://api.line.me/oauth2/v2.1/token";
-const LINE_PROFILE_URL = "https://api.line.me/v2/profile";
-
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
-  const LINE_CHANNEL_ID = Deno.env.get("LINE_CHANNEL_ID")!;
-  const LINE_CHANNEL_SECRET = Deno.env.get("LINE_CHANNEL_SECRET")!;
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const LINE_CHANNEL_ID = Deno.env.get("LINE_CHANNEL_ID");
+    const LINE_CHANNEL_SECRET = Deno.env.get("LINE_CHANNEL_SECRET");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  const url = new URL(req.url);
-  const action = url.searchParams.get("action");
-
-  // Step 1: Redirect user to LINE login
-  if (action === "login") {
-    const redirectUri = url.searchParams.get("redirect_uri") || url.origin + "/line-auth?action=callback";
-    const appRedirect = url.searchParams.get("app_redirect") || "";
-
-    const state = btoa(JSON.stringify({ redirect_uri: redirectUri, app_redirect: appRedirect }));
-
-    const lineUrl = new URL(LINE_AUTH_URL);
-    lineUrl.searchParams.set("response_type", "code");
-    lineUrl.searchParams.set("client_id", LINE_CHANNEL_ID);
-    lineUrl.searchParams.set("redirect_uri", redirectUri);
-    lineUrl.searchParams.set("state", state);
-    lineUrl.searchParams.set("scope", "profile openid email");
-
-    return new Response(null, {
-      status: 302,
-      headers: { ...corsHeaders, Location: lineUrl.toString() },
-    });
-  }
-
-  // Step 2: Handle callback from LINE
-  if (action === "callback") {
-    const code = url.searchParams.get("code");
-    const stateParam = url.searchParams.get("state");
-
-    if (!code || !stateParam) {
-      return new Response("Missing code or state", { status: 400, headers: corsHeaders });
+    if (!LINE_CHANNEL_ID || !LINE_CHANNEL_SECRET) {
+      throw new Error("LINE credentials not configured");
     }
 
-    let stateData: { redirect_uri: string; app_redirect: string };
-    try {
-      stateData = JSON.parse(atob(stateParam));
-    } catch {
-      return new Response("Invalid state", { status: 400, headers: corsHeaders });
+    const { code, redirectUri } = await req.json();
+
+    // Step 1: no code -> return LINE login URL
+    if (!code) {
+      const state = crypto.randomUUID();
+      const lineAuthUrl =
+        `https://access.line.me/oauth2/v2.1/authorize?response_type=code` +
+        `&client_id=${LINE_CHANNEL_ID}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&state=${state}` +
+        `&scope=profile%20openid%20email`;
+
+      return new Response(JSON.stringify({ url: lineAuthUrl, state }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Exchange code for tokens
-    const tokenRes = await fetch(LINE_TOKEN_URL, {
+    // Step 2: exchange code -> create/login Supabase user -> magic link token
+    const tokenRes = await fetch("https://api.line.me/oauth2/v2.1/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: stateData.redirect_uri,
+        redirect_uri: redirectUri,
         client_id: LINE_CHANNEL_ID,
         client_secret: LINE_CHANNEL_SECRET,
       }),
@@ -74,114 +53,123 @@ Deno.serve(async (req) => {
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok) {
-      console.error("LINE token exchange failed:", tokenData);
-      return new Response(JSON.stringify({ error: "LINE token exchange failed", details: tokenData }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`LINE token error: ${JSON.stringify(tokenData)}`);
     }
 
-    // Get LINE profile
-    const profileRes = await fetch(LINE_PROFILE_URL, {
+    const profileRes = await fetch("https://api.line.me/v2/profile", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     const profile = await profileRes.json();
-    console.log("LINE profile:", JSON.stringify(profile));
 
-    // Create or sign in user via Supabase Admin
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.49.1");
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    const email = `line_${profile.userId}@line.local`;
+    const lineEmail = `line_${profile.userId}@line.local`;
+    let userId: string | null = null;
 
-    // Try to find existing user
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email === email || u.user_metadata?.line_user_id === profile.userId
-    );
-
-    let userId: string;
-
-    if (existingUser) {
-      userId = existingUser.id;
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          line_user_id: profile.userId,
-          display_name: profile.displayName,
-          avatar_url: profile.pictureUrl,
-          provider: "line",
-        },
-      });
-    } else {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          line_user_id: profile.userId,
-          display_name: profile.displayName,
-          avatar_url: profile.pictureUrl,
-          provider: "line",
-        },
-      });
-
-      if (createError || !newUser.user) {
-        console.error("Failed to create user:", createError);
-        return new Response(JSON.stringify({ error: "Failed to create user", details: createError }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+    try {
+      const { data: createdUserData, error: createError } =
+        await supabaseAdmin.auth.admin.createUser({
+          email: lineEmail,
+          email_confirm: true,
+          user_metadata: {
+            full_name: profile.displayName,
+            display_name: profile.displayName,
+            avatar_url: profile.pictureUrl,
+            line_user_id: profile.userId,
+            provider: "line",
+          },
         });
+
+      if (createError) throw createError;
+      userId = createdUserData.user.id;
+
+      // Best-effort profile row for new user
+      try {
+        await supabaseAdmin.from("profiles").insert({
+          user_id: userId,
+          email: lineEmail,
+          display_name: profile.displayName,
+          avatar_url: profile.pictureUrl,
+        });
+      } catch (_) {
+        // ignore — RLS / duplicates are non-fatal here
       }
-      userId = newUser.user.id;
+    } catch (createError: any) {
+      const alreadyExists =
+        createError?.code === "email_exists" ||
+        createError?.message?.includes("already been registered");
+      if (!alreadyExists) throw createError;
 
-      await supabaseAdmin.from("profiles").insert({
-        user_id: userId,
-        display_name: profile.displayName,
-        avatar_url: profile.pictureUrl,
-      });
+      // Existing user — find by email
+      for (let page = 1; page <= 3 && !userId; page++) {
+        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage: 200,
+        });
+        if (!usersData?.users?.length) break;
+        const found = usersData.users.find((u: any) => u.email === lineEmail);
+        if (found) userId = found.id;
+        if (usersData.users.length < 200) break;
+      }
     }
 
-    // Generate magic link - redirect to the action_link directly
-    // Supabase will verify the token and redirect to the app with session tokens
-    const appRedirect = stateData.app_redirect || "https://promptpay-buddy.lovable.app";
-
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: {
-        redirectTo: appRedirect,
-      },
-    });
-
-    if (linkError || !linkData) {
-      console.error("Failed to generate link:", linkError);
-      return new Response(JSON.stringify({ error: "Failed to generate session" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (userId) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            full_name: profile.displayName,
+            display_name: profile.displayName,
+            avatar_url: profile.pictureUrl,
+            line_user_id: profile.userId,
+            provider: "line",
+          },
+        });
+      } catch (_) { /* ignore metadata sync failures */ }
     }
 
-    // The action_link is a Supabase verify URL that will:
-    // 1. Verify the magic link token
-    // 2. Redirect to redirectTo with access_token & refresh_token in the URL hash
-    const actionLink = linkData.properties?.action_link;
-    console.log("Redirecting to action_link:", actionLink);
-
-    if (!actionLink) {
-      return new Response(JSON.stringify({ error: "No action link generated" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Generate magic link token (with retry)
+    let sessionData: any = null;
+    let sessionError: any = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: lineEmail,
       });
+      if (!result.error) {
+        sessionData = result.data;
+        sessionError = null;
+        break;
+      }
+      sessionError = result.error;
+      if (attempt < 1) await new Promise((r) => setTimeout(r, 500));
     }
 
-    return new Response(null, {
-      status: 302,
-      headers: { ...corsHeaders, Location: actionLink },
+    if (sessionError) throw sessionError;
+
+    const linkUrl = new URL(sessionData.properties.action_link);
+    const token_hash =
+      linkUrl.searchParams.get("token_hash") ?? linkUrl.searchParams.get("token");
+    const type = linkUrl.searchParams.get("type") ?? "magiclink";
+
+    return new Response(
+      JSON.stringify({
+        token_hash,
+        type,
+        email: lineEmail,
+        profile: {
+          displayName: profile.displayName,
+          pictureUrl: profile.pictureUrl,
+        },
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (error: unknown) {
+    console.error("LINE auth error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  return new Response(JSON.stringify({ error: "Invalid action" }), {
-    status: 400,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
 });
