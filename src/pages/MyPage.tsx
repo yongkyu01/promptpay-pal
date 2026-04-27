@@ -3,7 +3,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCircle, LogOut, QrCode, Wallet, Save, Megaphone, Headphones, FileText, HelpCircle, UserX } from "lucide-react";
+import { UserCircle, LogOut, QrCode, Wallet, Save, Megaphone, Headphones, FileText, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -168,16 +168,6 @@ export default function MyPage() {
             )}
             <span className="text-muted-foreground">›</span>
           </span>
-        </button>
-        <button
-          onClick={() => navigate("/inquiry")}
-          className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
-        >
-          <span className="flex items-center gap-3">
-            <HelpCircle className="h-4 w-4 text-primary" />
-            {L("contact")}
-          </span>
-          <span className="text-muted-foreground">›</span>
         </button>
       </div>
 
