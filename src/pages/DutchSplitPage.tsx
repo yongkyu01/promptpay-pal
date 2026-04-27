@@ -4,7 +4,7 @@ import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, Trash2, Users as UsersIcon, Sparkles, QrCode, PartyPopper, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import generatePayload from "promptpay-qr";
@@ -31,6 +31,22 @@ export default function DutchSplitPage() {
   const [hostPromptpay, setHostPromptpay] = useState<string | null>(null);
   const [splitMethod, setSplitMethod] = useState<"equal" | "ladder">("equal");
   const [ladderAssignments, setLadderAssignments] = useState<Record<string, number>>({});
+  const ladderAssignmentsRef = useRef<Record<string, number>>({});
+
+  const syncLadderAssignments = useCallback(
+    (assignments: { memberId: string; amount: number; label: string }[] | null) => {
+      const nextAssignments = assignments
+        ? assignments.reduce<Record<string, number>>((acc, current) => {
+            acc[current.memberId] = current.amount;
+            return acc;
+          }, {})
+        : {};
+
+      ladderAssignmentsRef.current = nextAssignments;
+      setLadderAssignments(nextAssignments);
+    },
+    []
+  );
 
   const { data: split } = useQuery({
     queryKey: ["split", id],
@@ -223,13 +239,14 @@ export default function DutchSplitPage() {
 
   const finalize = async () => {
     if (!user || !id || !split) return;
+    const currentLadderAssignments = ladderAssignmentsRef.current;
     // If using ladder, keep the per-member amounts that were assigned by the
     // ladder result (already written to split_members.amount_due via onApply).
     // Only re-write member totals when using the equal/item-based split.
     if (splitMethod === "ladder") {
       const updates = members.map((m) =>
         supabase.from("split_members").update({
-          amount_due: Number((ladderAssignments[m.id] || 0).toFixed(2)),
+          amount_due: Number((currentLadderAssignments[m.id] || 0).toFixed(2)),
         }).eq("id", m.id)
       );
       await Promise.all(updates);
@@ -250,7 +267,7 @@ export default function DutchSplitPage() {
     const me = members.find((m) => m.is_owner);
     const myShare = me
       ? splitMethod === "ladder"
-        ? Number((ladderAssignments[me.id] ?? (me as any).amount_due ?? 0) || 0)
+        ? Number((currentLadderAssignments[me.id] ?? (me as any).amount_due ?? 0) || 0)
         : memberTotals.get(me.id) || 0
       : 0;
     if (myShare > 0) {
@@ -507,25 +524,9 @@ export default function DutchSplitPage() {
           lang={lang}
           members={members.map((member) => ({ id: member.id, name: member.name }))}
           total={total}
-          onAssignmentsChange={(assignments) => {
-            if (!assignments) {
-              setLadderAssignments({});
-              return;
-            }
-            setLadderAssignments(
-              assignments.reduce<Record<string, number>>((acc, current) => {
-                acc[current.memberId] = current.amount;
-                return acc;
-              }, {})
-            );
-          }}
+          onAssignmentsChange={syncLadderAssignments}
           onApply={async (assignments) => {
-            setLadderAssignments(
-              assignments.reduce<Record<string, number>>((acc, current) => {
-                acc[current.memberId] = current.amount;
-                return acc;
-              }, {})
-            );
+            syncLadderAssignments(assignments);
             await Promise.all(
               assignments.map((a) =>
                 supabase.from("split_members").update({ amount_due: a.amount }).eq("id", a.memberId)
