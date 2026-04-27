@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type Lang = "th" | "en" | "ko" | "ja";
@@ -61,6 +61,13 @@ const LABELS = {
   edit: { th: "แก้ไข", en: "Edit", ko: "수정", ja: "編集" },
   delete: { th: "ลบ", en: "Delete", ko: "삭제", ja: "削除" },
   confirmDelete: { th: "ลบโพสต์นี้?", en: "Delete this post?", ko: "이 글을 삭제할까요?", ja: "この投稿を削除しますか？" },
+  contact: { th: "ติดต่อเรา", en: "Contact Us", ko: "문의하기", ja: "お問い合わせ" },
+  contactDesc: {
+    th: "ส่งคำถามถึงทีมงานโดยตรง",
+    en: "Send your question directly to our team",
+    ko: "운영팀에 직접 문의를 남겨보세요",
+    ja: "運営チームに直接お問い合わせください",
+  },
 } as const;
 
 export default function BoardPage() {
