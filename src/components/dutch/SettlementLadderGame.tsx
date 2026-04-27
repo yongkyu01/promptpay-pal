@@ -35,7 +35,7 @@ const TOP_PAD = 12;
 const BOTTOM_PAD = 12;
 
 // Path reveal animation duration (ms)
-const PATH_REVEAL_MS = 2600;
+const PATH_REVEAL_MS = 5200;
 
 // Color palette for player tracks (HSL via CSS vars when available, fallback to fixed hues)
 const TRACK_COLORS = [
