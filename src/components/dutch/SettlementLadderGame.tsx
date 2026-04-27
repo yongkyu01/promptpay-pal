@@ -118,11 +118,17 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
       const next = prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s));
       // When the user edits an amount on any slot other than the last,
       // auto-adjust the last slot so the sum equals the bill total.
-      if (patch.amount !== undefined && total > 0 && next.length >= 2 && i !== next.length - 1) {
+      if (patch.amount !== undefined && next.length >= 2 && i !== next.length - 1) {
+        // Target = bill total when known, otherwise keep the previous grand total.
+        const prevSum = prev.reduce(
+          (s, x) => s + (Number.isFinite(x.amount) ? x.amount : 0),
+          0
+        );
+        const target = total > 0 ? total : prevSum;
         const sumExceptLast = next
           .slice(0, -1)
           .reduce((s, x) => s + (Number.isFinite(x.amount) ? x.amount : 0), 0);
-        const remainder = Number((total - sumExceptLast).toFixed(2));
+        const remainder = Number((target - sumExceptLast).toFixed(2));
         next[next.length - 1] = {
           ...next[next.length - 1],
           amount: Math.max(0, remainder),
