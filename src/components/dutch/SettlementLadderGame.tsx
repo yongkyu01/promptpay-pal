@@ -98,11 +98,14 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
       return;
     }
     setSlots((prev) => {
-      if (prev.length === members.length) return prev;
+      // Re-seed when count changes, or when slots are still all-zero placeholders
+      // (happens when component mounted before `total` was loaded).
+      const allZero = prev.every((s) => !s.amount);
+      if (prev.length === members.length && !allZero) return prev;
       return buildPresetSlots(members.length, total, lang);
     });
     setRun(null);
-  }, [members.length]);
+  }, [members.length, total, lang]);
 
   const slotsTotal = useMemo(
     () => slots.reduce((s, x) => s + (Number.isFinite(x.amount) ? x.amount : 0), 0),
