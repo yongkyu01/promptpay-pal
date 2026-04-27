@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -22,12 +22,22 @@ import BoardPage from "@/pages/BoardPage";
 import DeleteAccountPage from "@/pages/DeleteAccountPage";
 import InquiryPage from "@/pages/InquiryPage";
 import TermsConsentGate from "@/components/TermsConsentGate";
+import PublicLegalPage from "@/pages/PublicLegalPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // Public legal pages — accessible without login.
+  if (location.pathname === "/legal/terms") {
+    return <PublicLegalPage kind="terms" />;
+  }
+  if (location.pathname === "/legal/privacy") {
+    return <PublicLegalPage kind="privacy" />;
+  }
 
   if (loading) {
     return (
