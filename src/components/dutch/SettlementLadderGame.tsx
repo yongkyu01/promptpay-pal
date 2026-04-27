@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dices, Play, Trophy, RotateCcw, CheckCircle2, Wand2, Shuffle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,9 +60,23 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
   // Members that have already arrived at their destination (show arrival pop)
   const [arrived, setArrived] = useState<boolean[]>([]);
   const [cloudsLifted, setCloudsLifted] = useState(false);
+  // Animation progress 0..1 for the active member (drives both trail + traveler)
+  const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startTsRef = useRef<number>(0);
+  const activeMemberRef = useRef<number | null>(null);
+  const arrivalTimerRef = useRef<number | null>(null);
 
   const columnCount = members.length;
   const rowCount = Math.max(8, members.length * 2 + 4);
+
+  // Cleanup any running animation on unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (arrivalTimerRef.current != null) window.clearTimeout(arrivalTimerRef.current);
+    };
+  }, []);
 
   // Build rungs whenever the grid size changes
   useEffect(() => {
@@ -125,24 +139,57 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     return next;
   };
 
-  const playMember = (index: number) => {
-    if (activeMember !== null) return;
-    setCloudsLifted(true);
-    ensureRun();
+  const animateMember = (index: number) => {
+    // Cancel any in-flight animation
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (arrivalTimerRef.current != null) {
+      window.clearTimeout(arrivalTimerRef.current);
+      arrivalTimerRef.current = null;
+    }
+    activeMemberRef.current = index;
     setActiveMember(index);
+    setProgress(0);
     setArrived((prev) => {
       const base = prev.length === members.length ? [...prev] : members.map(() => false);
       base[index] = false;
       return base;
     });
-    window.setTimeout(() => {
-      setArrived((prev) => {
-        const base = prev.length === members.length ? [...prev] : members.map(() => false);
-        base[index] = true;
-        return base;
-      });
-      setActiveMember(null);
-    }, PATH_REVEAL_MS + 100);
+
+    startTsRef.current = performance.now();
+    const tick = (now: number) => {
+      if (activeMemberRef.current !== index) return; // got cancelled
+      const elapsed = now - startTsRef.current;
+      const p = Math.min(1, elapsed / PATH_REVEAL_MS);
+      // ease in-out
+      const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      setProgress(eased);
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+        arrivalTimerRef.current = window.setTimeout(() => {
+          setArrived((prev) => {
+            const base = prev.length === members.length ? [...prev] : members.map(() => false);
+            base[index] = true;
+            return base;
+          });
+          if (activeMemberRef.current === index) {
+            activeMemberRef.current = null;
+            setActiveMember(null);
+          }
+        }, 120);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  const playMember = (index: number) => {
+    setCloudsLifted(true);
+    ensureRun();
+    animateMember(index);
   };
 
   const startGame = () => {
@@ -154,23 +201,25 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     const perPath = PATH_REVEAL_MS + 300;
     members.forEach((_, i) => {
       window.setTimeout(() => {
-        setActiveMember(i);
-        window.setTimeout(() => {
-          setArrived((prev) => {
-            const base = prev.length === members.length ? [...prev] : members.map(() => false);
-            base[i] = true;
-            return base;
-          });
-        }, PATH_REVEAL_MS + 50);
+        animateMember(i);
       }, i * perPath);
     });
-    window.setTimeout(() => setActiveMember(null), members.length * perPath + 200);
   };
 
   const reset = () => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (arrivalTimerRef.current != null) {
+      window.clearTimeout(arrivalTimerRef.current);
+      arrivalTimerRef.current = null;
+    }
+    activeMemberRef.current = null;
     setRun(null);
     setActiveMember(null);
     setArrived([]);
+    setProgress(0);
     setSlots(buildPresetSlots(members.length, total, lang));
     setRungs(buildRungs(rowCount, columnCount));
     setCloudsLifted(false);
