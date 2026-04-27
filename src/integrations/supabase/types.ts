@@ -433,6 +433,7 @@ export type Database = {
           place: string | null
           receipt_image_url: string | null
           service_charge: number
+          split_method: string
           status: string
           subtotal: number
           title: string
@@ -449,6 +450,7 @@ export type Database = {
           place?: string | null
           receipt_image_url?: string | null
           service_charge?: number
+          split_method?: string
           status?: string
           subtotal?: number
           title?: string
@@ -465,6 +467,7 @@ export type Database = {
           place?: string | null
           receipt_image_url?: string | null
           service_charge?: number
+          split_method?: string
           status?: string
           subtotal?: number
           title?: string
