@@ -295,38 +295,49 @@ export default function DutchSplitPage() {
             const assigned: string[] = Array.isArray(it.assigned_member_ids) ? (it.assigned_member_ids as any[]).map(String) : [];
             return (
               <div key={it.id} className="rounded-xl bg-secondary/40 p-3 space-y-2">
+                {/* Row 1: name + delete */}
                 <div className="flex items-center gap-2">
                   <input
                     defaultValue={it.name}
                     onBlur={(e) => e.target.value !== it.name && updateItem(it.id, { name: e.target.value })}
                     disabled={isSettled}
-                    className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
-                  />
-                  <input
-                    type="number"
-                    defaultValue={it.quantity}
-                    onBlur={(e) => Number(e.target.value) !== it.quantity && updateItem(it.id, { quantity: Math.max(1, Number(e.target.value)), unit_price: it.unit_price })}
-                    disabled={isSettled}
-                    className="w-12 rounded-md bg-background px-2 py-1 text-sm text-center border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
-                  />
-                  <span className="text-xs text-muted-foreground">×</span>
-                  <input
-                    type="number"
-                    defaultValue={Number(it.total)}
-                    onBlur={(e) => {
-                      const newTotal = Number(e.target.value);
-                      if (newTotal !== Number(it.total)) {
-                        updateItem(it.id, { unit_price: newTotal / Math.max(1, it.quantity), quantity: it.quantity });
-                      }
-                    }}
-                    disabled={isSettled}
-                    className="w-20 rounded-md bg-background px-2 py-1 text-sm text-right font-semibold border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
+                    className="flex-1 min-w-0 rounded-md bg-background px-2 py-1 text-sm font-medium border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
                   />
                   {!isSettled && (
-                    <button onClick={() => removeItem(it.id)} className="text-muted-foreground hover:text-destructive">
+                    <button onClick={() => removeItem(it.id)} className="shrink-0 text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
+                </div>
+                {/* Row 2: qty × unit price = total */}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    defaultValue={it.quantity}
+                    onBlur={(e) => {
+                      const q = Math.max(1, Number(e.target.value) || 1);
+                      if (q !== it.quantity) updateItem(it.id, { quantity: q, unit_price: it.unit_price });
+                    }}
+                    disabled={isSettled}
+                    className="w-12 shrink-0 rounded-md bg-background px-1.5 py-1 text-sm text-center border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">×</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    defaultValue={Number(it.unit_price)}
+                    onBlur={(e) => {
+                      const up = Number(e.target.value) || 0;
+                      if (up !== Number(it.unit_price)) updateItem(it.id, { unit_price: up, quantity: it.quantity });
+                    }}
+                    disabled={isSettled}
+                    className="flex-1 min-w-0 rounded-md bg-background px-2 py-1 text-sm text-right border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">=</span>
+                  <span className="w-24 shrink-0 rounded-md bg-background/60 px-2 py-1 text-sm text-right font-semibold border border-border">
+                    ฿{Number(it.total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
                 </div>
                 {/* Assignment chips */}
                 <div className="flex flex-wrap gap-1.5">
