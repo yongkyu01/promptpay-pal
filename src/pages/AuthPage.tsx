@@ -17,7 +17,6 @@ import {
 } from "@/lib/authRelay";
 
 const PUBLISHED_URL = "https://promptpay-buddy.lovable.app";
-const LINE_REDIRECT_URI = PUBLISHED_URL;
 
 const webViewWarnings: Record<string, string> = {
   th: "เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบบางประเภท กรุณาเปิดใน Chrome หรือ Safari",
@@ -76,64 +75,55 @@ export default function AuthPage() {
     };
   }, []);
 
-  // Handle LINE OAuth callback (?code & ?state) — runs in the EXTERNAL browser tab
+  // Handle LINE callback success marker (?line_done=1&state=...).
+  // The edge function (line-auth?action=callback) has already exchanged the
+  // code, created the magiclink, and written it into login_relays — so on the
+  // external browser we just show the success screen, and the app polls the
+  // relay table to complete sign-in.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const lineDone = params.get("line_done");
+    const lineError = params.get("line_error");
     const state = params.get("state");
-    if (!code || !state || lineCbRef.current) return;
+
+    if (lineError) {
+      toast.error(`LINE 로그인 실패: ${lineError}`);
+      window.history.replaceState({}, "", "/");
+      return;
+    }
+    if (!lineDone || !state || lineCbRef.current) return;
     lineCbRef.current = true;
 
     (async () => {
-      setLoading(true);
-      try {
-        const res = await supabase.functions.invoke("line-auth", {
-          body: { code, redirectUri: LINE_REDIRECT_URI },
-          headers: { "Content-Type": "application/json" },
+      const isStandaloneNow =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as any).standalone || isNativeApp();
+
+      if (isStandaloneNow) {
+        // App context: pull token_hash from relay and verify directly.
+        const { data, error } = await supabase
+          .from("login_relays")
+          .select("token_hash, token_type")
+          .eq("id", state)
+          .maybeSingle();
+        if (error || !data?.token_hash) {
+          toast.error("Relay 토큰을 찾을 수 없습니다");
+          return;
+        }
+        try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: (data.token_type || "magiclink") as any,
         });
-        if (res.error || !res.data?.token_hash) {
-          toast.error("LINE 로그인 실패");
-          setLoading(false);
-          return;
-        }
-
-        const isStandaloneNow =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          (navigator as any).standalone || isNativeApp();
-
-        if (isStandaloneNow) {
-          // We ARE the app — verify directly
-          try { await supabase.auth.signOut({ scope: "local" }); } catch {}
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: res.data.token_hash,
-            type: (res.data.type || "magiclink") as any,
-          });
-          if (verifyError) toast.error(verifyError.message);
-          else clearStoredRelayState();
-          window.history.replaceState({}, "", "/");
-          setLoading(false);
-          return;
-        }
-
-        // External browser path — store relay for app to pick up
-        const { error: upsertError } = await supabase.from("login_relays").upsert({
-          id: state,
-          token_hash: res.data.token_hash,
-          token_type: res.data.type || "magiclink",
-        }, { onConflict: "id" });
-
-        if (upsertError) {
-          console.error("[LINE Relay] upsert failed", upsertError);
-          toast.error("Relay 저장 실패");
-        } else {
-          setCallbackDone(true);
-        }
+        if (verifyError) toast.error(verifyError.message);
+        else clearStoredRelayState();
         window.history.replaceState({}, "", "/");
-      } catch (e: any) {
-        console.error("LINE callback error", e);
-        toast.error(e?.message ?? "LINE 로그인 실패");
+        return;
       }
-      setLoading(false);
+
+      // External browser: relay row already exists, app is polling.
+      setCallbackDone(true);
+      window.history.replaceState({}, "", "/");
     })();
   }, []);
 
@@ -331,8 +321,10 @@ export default function AuthPage() {
     try { await supabase.auth.signOut({ scope: "local" }); } catch {}
 
     try {
+      // No redirectUri needed — edge function uses the URL registered
+      // in LINE Developers Console.
       const invokePromise = supabase.functions.invoke("line-auth", {
-        body: { redirectUri: LINE_REDIRECT_URI },
+        body: {},
         headers: { "Content-Type": "application/json" },
       });
       const timeoutPromise = new Promise<never>((_, reject) =>
