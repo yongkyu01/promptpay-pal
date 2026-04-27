@@ -30,6 +30,11 @@ const queryClient = new QueryClient();
 function AppContent() {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const hasAuthRelayCallback =
+    searchParams.has("start_google") ||
+    searchParams.has("oauth_relay") ||
+    (searchParams.has("code") && searchParams.has("state"));
 
   // Public legal pages — accessible without login.
   if (location.pathname === "/legal/terms") {
@@ -47,7 +52,7 @@ function AppContent() {
     );
   }
 
-  if (!user) {
+  if (!user || hasAuthRelayCallback) {
     return <AuthPage />;
   }
 
