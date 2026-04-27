@@ -130,7 +130,8 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
       }
       return next;
     });
-    setRun(null);
+    // NOTE: do NOT reset `run` — the ladder paths stay the same, and we want
+    // users to be able to tweak amounts after the game and still apply them.
   };
 
   const presetFill = () => {
