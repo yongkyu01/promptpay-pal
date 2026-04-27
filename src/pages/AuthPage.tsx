@@ -4,8 +4,15 @@ import { useApp } from "@/context/AppContext";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LogIn, UserPlus, Loader2 } from "lucide-react";
+import { LogIn, UserPlus, Loader2, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { LANG_OPTIONS } from "@/lib/i18n";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   isNativeApp,
   isWebViewInApp,
@@ -28,7 +35,7 @@ const webViewWarnings: Record<string, string> = {
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
-  const { lang } = useApp();
+  const { lang, setLang } = useApp();
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -437,6 +444,27 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="absolute top-4 right-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary">
+              <Globe className="h-3 w-3" />
+              {LANG_OPTIONS.find((l) => l.key === lang)?.flag}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {LANG_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={opt.key}
+                onClick={() => setLang(opt.key)}
+                className={lang === opt.key ? "bg-secondary font-semibold" : ""}
+              >
+                {opt.flag} {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary shadow-primary">
