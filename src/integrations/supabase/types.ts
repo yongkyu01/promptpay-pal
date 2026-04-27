@@ -210,6 +210,27 @@ export type Database = {
           },
         ]
       }
+      login_relays: {
+        Row: {
+          created_at: string
+          id: string
+          token_hash: string
+          token_type: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          token_hash: string
+          token_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token_hash?: string
+          token_type?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_id: string

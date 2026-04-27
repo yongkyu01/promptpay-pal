@@ -1,16 +1,30 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LogIn, UserPlus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
-  isNative,
-  NATIVE_REDIRECT_URI,
-  openOAuthUrlNative,
-  setSessionFromCallbackUrl,
-} from "@/lib/nativeAuth";
+  isNativeApp,
+  isWebViewInApp,
+  isLineInAppBrowser,
+  openInExternalBrowser,
+  writeStoredRelayState,
+  clearStoredRelayState,
+  readStoredRelayState,
+} from "@/lib/authRelay";
+
+const PUBLISHED_URL = "https://promptpay-buddy.lovable.app";
+const LINE_REDIRECT_URI = `${PUBLISHED_URL}/`;
+
+const webViewWarnings: Record<string, string> = {
+  th: "เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบบางประเภท กรุณาเปิดใน Chrome หรือ Safari",
+  en: "Some login methods are not supported in in-app browsers. Please open in Chrome or Safari.",
+  ko: "인앱 브라우저에서는 일부 로그인 방식이 지원되지 않습니다. Chrome 또는 Safari에서 열어주세요.",
+  ja: "アプリ内ブラウザでは一部のログイン方法がサポートされていません。ChromeまたはSafariで開いてください。",
+};
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -22,6 +36,206 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [relayState, setRelayState] = useState<string | null>(() => readStoredRelayState());
+  const [relayStatus, setRelayStatus] = useState<string>("");
+  const [callbackDone, setCallbackDone] = useState(false);
+
+  const lineCbRef = useRef(false);
+  const oauthRelayRef = useRef(false);
+  const startGoogleRef = useRef(false);
+
+  // Auto-redirect out of LINE in-app browser
+  useEffect(() => {
+    if (isLineInAppBrowser()) {
+      const t = setTimeout(() => openInExternalBrowser(window.location.href), 300);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  // Listen for relay status events from AuthContext polling
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.status) setRelayStatus(detail.status);
+    };
+    window.addEventListener("relay-status", handler);
+    return () => window.removeEventListener("relay-status", handler);
+  }, []);
+
+  // Sync relay state on focus/visibility
+  useEffect(() => {
+    const sync = () => setRelayState(readStoredRelayState());
+    const onVis = () => { if (document.visibilityState === "visible") sync(); };
+    window.addEventListener("focus", sync);
+    window.addEventListener("storage", sync);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("focus", sync);
+      window.removeEventListener("storage", sync);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  // Handle LINE OAuth callback (?code & ?state) — runs in the EXTERNAL browser tab
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    if (!code || !state || lineCbRef.current) return;
+    lineCbRef.current = true;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await supabase.functions.invoke("line-auth", {
+          body: { code, redirectUri: LINE_REDIRECT_URI },
+          headers: { "Content-Type": "application/json" },
+        });
+        if (res.error || !res.data?.token_hash) {
+          toast.error("LINE 로그인 실패");
+          setLoading(false);
+          return;
+        }
+
+        const isStandaloneNow =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          (navigator as any).standalone || isNativeApp();
+
+        if (isStandaloneNow) {
+          // We ARE the app — verify directly
+          try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: res.data.token_hash,
+            type: (res.data.type || "magiclink") as any,
+          });
+          if (verifyError) toast.error(verifyError.message);
+          else clearStoredRelayState();
+          window.history.replaceState({}, "", "/");
+          setLoading(false);
+          return;
+        }
+
+        // External browser path — store relay for app to pick up
+        const { error: upsertError } = await supabase.from("login_relays").upsert({
+          id: state,
+          token_hash: res.data.token_hash,
+          token_type: res.data.type || "magiclink",
+        }, { onConflict: "id" });
+
+        if (upsertError) {
+          console.error("[LINE Relay] upsert failed", upsertError);
+          toast.error("Relay 저장 실패");
+        } else {
+          setCallbackDone(true);
+        }
+        window.history.replaceState({}, "", "/");
+      } catch (e: any) {
+        console.error("LINE callback error", e);
+        toast.error(e?.message ?? "LINE 로그인 실패");
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  // Handle Google relay callback (?oauth_relay=ID) — runs in EXTERNAL browser
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const relayIdFromUrl = params.get("oauth_relay");
+    const relayIdFromStorage = localStorage.getItem("pending_oauth_relay");
+    const relayId = relayIdFromUrl || relayIdFromStorage;
+    if (!relayId || oauthRelayRef.current) return;
+    oauthRelayRef.current = true;
+
+    (async () => {
+      // If we are inside the native app, just wait for our normal session to land
+      if (isNativeApp()) {
+        for (let i = 0; i < 20; i++) {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            clearStoredRelayState();
+            localStorage.removeItem("pending_oauth_relay");
+            window.history.replaceState({}, "", "/");
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 600));
+        }
+        return;
+      }
+
+      // External browser — wait for OAuth session, then create relay row
+      let session: any = null;
+      for (let i = 0; i < 20 && !session; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) session = data.session;
+        else await new Promise((r) => setTimeout(r, 600));
+      }
+      if (!session) {
+        await new Promise<void>((resolve) => {
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+            if (s) { session = s; subscription.unsubscribe(); resolve(); }
+          });
+          setTimeout(() => { subscription.unsubscribe(); resolve(); }, 10000);
+        });
+      }
+      if (!session) {
+        toast.error("로그인 세션을 가져오지 못했습니다");
+        return;
+      }
+
+      try {
+        const { data: relayData, error: relayErr } =
+          await supabase.functions.invoke("generate-relay-token", {
+            headers: { "Content-Type": "application/json" },
+          });
+        if (relayErr || !relayData?.token_hash) {
+          console.error("[OAuth Relay] generate-relay-token failed", relayErr);
+          toast.error("Relay 토큰 생성 실패");
+          return;
+        }
+        const { error: upsertErr } = await supabase.from("login_relays").upsert({
+          id: relayId,
+          token_hash: relayData.token_hash,
+          token_type: relayData.type || "magiclink",
+        }, { onConflict: "id" });
+        if (upsertErr) {
+          console.error("[OAuth Relay] upsert failed", upsertErr);
+          toast.error("Relay 저장 실패");
+          return;
+        }
+        localStorage.removeItem("pending_oauth_relay");
+        setCallbackDone(true);
+        window.history.replaceState({}, "", "/");
+      } catch (e: any) {
+        console.error("[OAuth Relay] exception", e);
+        toast.error(e?.message ?? "Relay 처리 실패");
+      }
+    })();
+  }, []);
+
+  // Handle Google two-hop trigger (?start_google=ID) — runs in EXTERNAL browser
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const relayId = params.get("start_google");
+    if (!relayId || startGoogleRef.current) return;
+    startGoogleRef.current = true;
+
+    localStorage.setItem("pending_oauth_relay", relayId);
+    window.history.replaceState({}, "", "/");
+
+    const redirectUrl = `${PUBLISHED_URL}/?oauth_relay=${encodeURIComponent(relayId)}`;
+    lovable.auth.signInWithOAuth("google", {
+      redirect_uri: redirectUrl,
+      extraParams: { prompt: "select_account" },
+    }).then(({ error }) => {
+      if (error) {
+        console.error("[Google Two-Hop] OAuth init failed", error);
+        toast.error(error.message ?? "Google 로그인 실패");
+      }
+    }).catch((e) => {
+      console.error("[Google Two-Hop] unexpected", e);
+      toast.error(e?.message ?? "Google 로그인 실패");
+    });
+  }, []);
 
   const L = {
     agreeTerms: { th: "ข้อกำหนดในการให้บริการ", en: "Terms of Service", ko: "서비스 이용 약관 동의 (필수)", ja: "利用規約に同意 (必須)" },
@@ -55,6 +269,180 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  // ---- Google login ----
+  const handleGoogleLogin = async () => {
+    if (isWebViewInApp()) {
+      toast.error(webViewWarnings[lang] || webViewWarnings.en);
+      return;
+    }
+    clearStoredRelayState();
+    setLoading(true);
+    try {
+      try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+
+      const needsRelay =
+        isNativeApp() ||
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as any).standalone;
+
+      if (needsRelay) {
+        const relayId = crypto.randomUUID();
+        writeStoredRelayState(relayId);
+        setRelayState(relayId);
+        const gatewayUrl = `${PUBLISHED_URL}/?start_google=${relayId}`;
+        try {
+          openInExternalBrowser(gatewayUrl);
+        } catch (e) {
+          window.location.href = gatewayUrl;
+        }
+        setTimeout(() => setLoading(false), 3000);
+        return;
+      }
+
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/",
+      });
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Google login failed");
+      setLoading(false);
+    }
+  };
+
+  // ---- LINE login ----
+  const handleLineLogin = async () => {
+    clearStoredRelayState();
+    setLoading(true);
+
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone || isNativeApp();
+    const native = isNativeApp();
+
+    let externalWin: Window | null = null;
+    if (!native) {
+      try { externalWin = window.open("about:blank", "_blank"); } catch {}
+    }
+
+    try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+
+    try {
+      const invokePromise = supabase.functions.invoke("line-auth", {
+        body: { redirectUri: LINE_REDIRECT_URI },
+        headers: { "Content-Type": "application/json" },
+      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("LINE_AUTH_TIMEOUT")), 10000),
+      );
+      const res = (await Promise.race([invokePromise, timeoutPromise])) as Awaited<typeof invokePromise>;
+
+      if (res.error || !res.data?.url) {
+        if (externalWin) externalWin.close();
+        toast.error("LINE 로그인 실패");
+        setLoading(false);
+        return;
+      }
+
+      let lineUrl = res.data.url;
+      const url = new URL(lineUrl);
+      const state = url.searchParams.get("state") || "";
+      const relaySuffix = isStandalone ? "_pwa" : "_relay";
+      const relayStateValue = state + relaySuffix;
+      url.searchParams.set("state", relayStateValue);
+      lineUrl = url.toString();
+      writeStoredRelayState(relayStateValue);
+      setRelayState(relayStateValue);
+
+      if (native) {
+        try {
+          const win = window.open(lineUrl, "_blank");
+          if (!win) {
+            const stripped = lineUrl.replace(/^https?:\/\//, "");
+            window.location.href = `intent://${stripped}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
+          }
+        } catch {
+          const stripped = lineUrl.replace(/^https?:\/\//, "");
+          window.location.href = `intent://${stripped}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
+        }
+      } else if (externalWin) {
+        externalWin.location.href = lineUrl;
+      } else {
+        window.location.href = lineUrl;
+      }
+      setTimeout(() => setLoading(false), 3000);
+    } catch (e: any) {
+      if (externalWin) externalWin.close();
+      toast.error(e?.message ?? "LINE 로그인 실패");
+      setLoading(false);
+    }
+  };
+
+  // ---- Callback success screen (external browser) ----
+  if (callbackDone) {
+    setTimeout(() => { try { window.close(); } catch {} }, 1500);
+    const msgs: Record<string, { title: string; desc: string; closing: string; close: string }> = {
+      th: { title: "✅ เข้าสู่ระบบสำเร็จ!", desc: "หน้านี้จะปิดอัตโนมัติ...", closing: "หากไม่ปิด กรุณาปิดหน้านี้แล้วกลับไปที่แอป", close: "ปิดหน้านี้" },
+      en: { title: "✅ Login successful!", desc: "This page will close automatically...", closing: "If not, please close this tab and return to the app", close: "Close this tab" },
+      ko: { title: "✅ 로그인 성공!", desc: "이 페이지는 자동으로 닫힙니다...", closing: "닫히지 않으면 이 탭을 닫고 앱으로 돌아가주세요", close: "이 탭 닫기" },
+      ja: { title: "✅ ログイン成功！", desc: "このページは自動的に閉じます...", closing: "閉じない場合は、このタブを閉じてアプリに戻ってください", close: "このタブを閉じる" },
+    };
+    const m = msgs[lang] || msgs.en;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+        <div className="w-full max-w-sm text-center space-y-5">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-foreground">{m.title}</h1>
+          <p className="text-sm text-muted-foreground animate-pulse">{m.desc}</p>
+          <p className="text-xs text-muted-foreground/70 mt-4">{m.closing}</p>
+          <button
+            onClick={() => { try { window.close(); } catch {} }}
+            className="mt-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground"
+          >
+            {m.close}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Relay waiting screen (app side, waiting for external browser) ----
+  if (relayState && !loading) {
+    const wMsgs: Record<string, { title: string; desc: string }> = {
+      th: { title: "กำลังเข้าสู่ระบบ...", desc: "กรุณาเสร็จสิ้นการเข้าสู่ระบบในเบราว์เซอร์แล้วกลับมาที่แอป" },
+      en: { title: "Signing in...", desc: "Please complete login in the browser and return to the app" },
+      ko: { title: "로그인 중...", desc: "브라우저에서 로그인을 완료하고 앱으로 돌아와주세요" },
+      ja: { title: "ログイン中...", desc: "ブラウザでログインを完了してアプリに戻ってください" },
+    };
+    const m = wMsgs[lang] || wMsgs.en;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          <h1 className="text-xl font-bold text-foreground">{m.title}</h1>
+          <p className="text-sm text-muted-foreground">{m.desc}</p>
+          {relayStatus && (
+            <p className="text-xs text-muted-foreground font-mono bg-muted rounded px-2 py-1">
+              {relayStatus}
+            </p>
+          )}
+          <button
+            onClick={() => { clearStoredRelayState(); setRelayState(null); setRelayStatus(""); }}
+            className="text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            {lang === "th" ? "ยกเลิก" : lang === "ko" ? "취소" : lang === "ja" ? "キャンセル" : "Cancel"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -102,46 +490,24 @@ export default function AuthPage() {
             disabled={loading}
             className="flex w-full items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-primary transition-transform active:scale-95 disabled:opacity-50"
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isSignUp ? (
-              <UserPlus className="h-4 w-4" />
-            ) : (
-              <LogIn className="h-4 w-4" />
-            )}
-            {isSignUp
-              ? (lang === "th" ? "สมัครสมาชิก" : "Sign Up")
-              : (lang === "th" ? "เข้าสู่ระบบ" : "Sign In")}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignUp ? <UserPlus className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
+            {isSignUp ? (lang === "th" ? "สมัครสมาชิก" : "Sign Up") : (lang === "th" ? "เข้าสู่ระบบ" : "Sign In")}
           </button>
 
           {isSignUp && (
             <div className="space-y-2 pt-1">
               <label className="flex items-start gap-2 text-xs text-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
-                />
+                <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-border accent-primary" />
                 <span className="flex-1">
                   {tr("agreeTerms")}{" "}
-                  <button type="button" onClick={() => navigate("/board/terms")} className="text-primary underline">
-                    {tr("view")}
-                  </button>
+                  <button type="button" onClick={() => navigate("/board/terms")} className="text-primary underline">{tr("view")}</button>
                 </span>
               </label>
               <label className="flex items-start gap-2 text-xs text-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreePrivacy}
-                  onChange={(e) => setAgreePrivacy(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
-                />
+                <input type="checkbox" checked={agreePrivacy} onChange={(e) => setAgreePrivacy(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-border accent-primary" />
                 <span className="flex-1">
                   {tr("agreePrivacy")}{" "}
-                  <button type="button" onClick={() => navigate("/board/terms")} className="text-primary underline">
-                    {tr("view")}
-                  </button>
+                  <button type="button" onClick={() => navigate("/board/terms")} className="text-primary underline">{tr("view")}</button>
                 </span>
               </label>
             </div>
@@ -155,35 +521,9 @@ export default function AuthPage() {
         </div>
 
         <button
-          onClick={async () => {
-            try {
-              if (isNative()) {
-                // Native: use deep-link redirect, open in system browser, then
-                // capture the callback URL and set the Supabase session.
-                const result = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: NATIVE_REDIRECT_URI,
-                });
-                if (result.error) {
-                  toast.error(result.error.message);
-                  return;
-                }
-                // The lovable SDK returns a URL to open externally on native.
-                // Fallback: if SDK already handled redirect (web), bail out.
-                const oauthUrl = (result as any).url as string | undefined;
-                if (!oauthUrl) return;
-                const callback = await openOAuthUrlNative(oauthUrl);
-                await setSessionFromCallbackUrl(callback);
-              } else {
-                const { error } = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: window.location.origin,
-                });
-                if (error) toast.error(error.message);
-              }
-            } catch (e: any) {
-              toast.error(e?.message ?? "Google login failed");
-            }
-          }}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -195,23 +535,9 @@ export default function AuthPage() {
         </button>
 
         <button
-          onClick={async () => {
-            try {
-              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-              const callbackUrl = `${supabaseUrl}/functions/v1/line-auth?action=callback`;
-              const appRedirect = isNative() ? NATIVE_REDIRECT_URI : window.location.origin;
-              const loginUrl = `${supabaseUrl}/functions/v1/line-auth?action=login&redirect_uri=${encodeURIComponent(callbackUrl)}&app_redirect=${encodeURIComponent(appRedirect)}`;
-              if (isNative()) {
-                const callback = await openOAuthUrlNative(loginUrl);
-                await setSessionFromCallbackUrl(callback);
-              } else {
-                window.location.href = loginUrl;
-              }
-            } catch (e: any) {
-              toast.error(e?.message ?? "LINE login failed");
-            }
-          }}
-          className="flex w-full items-center justify-center gap-3 rounded-xl py-3 text-sm font-medium text-white transition-colors hover:opacity-90"
+          onClick={handleLineLogin}
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-3 rounded-xl py-3 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
           style={{ backgroundColor: "#06C755" }}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="white">
@@ -221,17 +547,9 @@ export default function AuthPage() {
         </button>
 
         <p className="text-center text-sm text-muted-foreground">
-          {isSignUp
-            ? (lang === "th" ? "มีบัญชีแล้ว?" : "Already have an account?")
-            : (lang === "th" ? "ยังไม่มีบัญชี?" : "Don't have an account?")}
-          {" "}
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="font-semibold text-primary"
-          >
-            {isSignUp
-              ? (lang === "th" ? "เข้าสู่ระบบ" : "Sign In")
-              : (lang === "th" ? "สมัครสมาชิก" : "Sign Up")}
+          {isSignUp ? (lang === "th" ? "มีบัญชีแล้ว?" : "Already have an account?") : (lang === "th" ? "ยังไม่มีบัญชี?" : "Don't have an account?")}{" "}
+          <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold text-primary">
+            {isSignUp ? (lang === "th" ? "เข้าสู่ระบบ" : "Sign In") : (lang === "th" ? "สมัครสมาชิก" : "Sign Up")}
           </button>
         </p>
       </div>
