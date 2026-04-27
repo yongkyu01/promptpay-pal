@@ -159,7 +159,7 @@ export default function MyPage() {
           <span className="text-muted-foreground">›</span>
         </button>
         <button
-          onClick={notImplemented}
+          onClick={() => navigate("/board/terms")}
           className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
         >
           <span className="flex items-center gap-3">
