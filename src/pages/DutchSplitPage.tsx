@@ -328,13 +328,18 @@ export default function DutchSplitPage() {
           )}
           {items.map((it) => {
             const assigned: string[] = Array.isArray(it.assigned_member_ids) ? (it.assigned_member_ids as any[]).map(String) : [];
+            const e = edits[it.id] || {};
+            const liveQty = e.quantity != null ? e.quantity : Number(it.quantity);
+            const liveUnit = e.unit_price != null ? e.unit_price : Number(it.unit_price);
+            const liveName = e.name != null ? e.name : it.name;
+            const liveTotal = (Number(liveUnit) || 0) * (Number(liveQty) || 0);
             return (
               <div key={it.id} className="rounded-xl bg-secondary/40 p-3 space-y-2">
                 {/* Row 1: name + delete */}
                 <div className="flex items-center gap-2">
                   <input
-                    defaultValue={it.name}
-                    onBlur={(e) => e.target.value !== it.name && updateItem(it.id, { name: e.target.value })}
+                    value={liveName}
+                    onChange={(ev) => queueItemUpdate(it.id, { name: ev.target.value })}
                     disabled={isSettled}
                     className="flex-1 min-w-0 rounded-md bg-background px-2 py-1 text-sm font-medium border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
                   />
@@ -349,10 +354,10 @@ export default function DutchSplitPage() {
                   <input
                     type="number"
                     inputMode="decimal"
-                    defaultValue={it.quantity}
-                    onBlur={(e) => {
-                      const q = Math.max(1, Number(e.target.value) || 1);
-                      if (q !== it.quantity) updateItem(it.id, { quantity: q, unit_price: it.unit_price });
+                    value={liveQty}
+                    onChange={(ev) => {
+                      const q = Math.max(1, Number(ev.target.value) || 1);
+                      queueItemUpdate(it.id, { quantity: q });
                     }}
                     disabled={isSettled}
                     className="w-12 shrink-0 rounded-md bg-background px-1.5 py-1 text-sm text-center border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
@@ -361,17 +366,17 @@ export default function DutchSplitPage() {
                   <input
                     type="number"
                     inputMode="decimal"
-                    defaultValue={Number(it.unit_price)}
-                    onBlur={(e) => {
-                      const up = Number(e.target.value) || 0;
-                      if (up !== Number(it.unit_price)) updateItem(it.id, { unit_price: up, quantity: it.quantity });
+                    value={liveUnit}
+                    onChange={(ev) => {
+                      const up = Number(ev.target.value) || 0;
+                      queueItemUpdate(it.id, { unit_price: up });
                     }}
                     disabled={isSettled}
                     className="flex-1 min-w-0 rounded-md bg-background px-2 py-1 text-sm text-right border border-input focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70"
                   />
                   <span className="text-xs text-muted-foreground shrink-0">=</span>
                   <span className="w-24 shrink-0 rounded-md bg-background/60 px-2 py-1 text-sm text-right font-semibold border border-border">
-                    ฿{Number(it.total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ฿{liveTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 {/* Assignment chips */}
