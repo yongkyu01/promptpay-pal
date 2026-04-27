@@ -19,6 +19,34 @@ interface Post {
   updated_at: string;
 }
 
+interface I18nPayload {
+  __i18n: true;
+  v: number;
+  translations: Record<Lang, { title: string; content: string }>;
+}
+
+function parseI18n(raw: string): I18nPayload | null {
+  if (!raw || raw[0] !== "{") return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.__i18n && parsed.translations) return parsed as I18nPayload;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function localized(post: Post, lang: Lang): { title: string; content: string } {
+  const i18n = parseI18n(post.content);
+  if (!i18n) return { title: post.title, content: post.content };
+  const order: Lang[] = [lang, "en", "ko", "th", "ja"];
+  for (const l of order) {
+    const t = i18n.translations[l];
+    if (t && t.content) return { title: t.title || post.title, content: t.content };
+  }
+  return { title: post.title, content: post.content };
+}
+
 const LABELS = {
   notice: { th: "ประกาศ", en: "Notices", ko: "공지사항", ja: "お知らせ" },
   support: { th: "ศูนย์ช่วยเหลือ", en: "Help Center", ko: "고객센터", ja: "カスタマーセンター" },
@@ -80,17 +108,34 @@ export default function BoardPage() {
 
   const startEdit = (p: Post) => {
     setEditing(p);
-    setTitle(p.title);
-    setContent(p.content);
+    const view = localized(p, lang as Lang);
+    setTitle(view.title);
+    setContent(view.content);
     setComposing(true);
   };
 
   const save = async () => {
     if (!user || !title.trim() || !content.trim()) return;
     if (editing) {
+      // Preserve multilingual structure if present: update only the current language.
+      const i18n = parseI18n(editing.content);
+      let nextContent = content;
+      let nextTitle = title;
+      if (i18n) {
+        const updated: I18nPayload = {
+          ...i18n,
+          translations: {
+            ...i18n.translations,
+            [lang as Lang]: { title, content },
+          },
+        };
+        nextContent = JSON.stringify(updated);
+        // Keep stored top-level title as Korean (or first available) for stability
+        nextTitle = updated.translations.ko?.title || title;
+      }
       const { error } = await supabase
         .from("posts" as any)
-        .update({ title, content })
+        .update({ title: nextTitle, content: nextContent })
         .eq("id", editing.id);
       if (error) return toast.error(error.message);
     } else {
@@ -184,6 +229,7 @@ export default function BoardPage() {
         <div className="space-y-2">
           {posts.map((p) => {
             const isOpen = openId === p.id;
+            const view = localized(p, lang as Lang);
             return (
               <div key={p.id} className="rounded-2xl border border-border bg-card overflow-hidden">
                 <button
@@ -191,7 +237,7 @@ export default function BoardPage() {
                   className="w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-semibold text-sm flex-1 line-clamp-2">{p.title}</p>
+                    <p className="font-semibold text-sm flex-1 line-clamp-2">{view.title}</p>
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap pt-0.5">
                       {new Date(p.created_at).toLocaleDateString()}
                     </span>
@@ -200,7 +246,7 @@ export default function BoardPage() {
                 {isOpen && (
                   <div className="px-4 pb-4 border-t border-border/50 pt-3">
                     <p className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
-                      {p.content}
+                      {view.content}
                     </p>
                     {isAdmin && (
                       <div className="flex gap-2 mt-3">
