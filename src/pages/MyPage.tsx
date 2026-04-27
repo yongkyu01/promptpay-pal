@@ -15,18 +15,22 @@ export default function MyPage() {
   const [promptpayId, setPromptpayId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [termsAt, setTermsAt] = useState<string | null>(null);
+  const [privacyAt, setPrivacyAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, promptpay_id")
+        .select("display_name, promptpay_id, terms_agreed_at, privacy_agreed_at")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
         setDisplayName(data.display_name || "");
         setPromptpayId((data as any).promptpay_id || "");
+        setTermsAt((data as any).terms_agreed_at || null);
+        setPrivacyAt((data as any).privacy_agreed_at || null);
       }
       setLoading(false);
     })();
@@ -58,6 +62,7 @@ export default function MyPage() {
     terms: { th: "ข้อกำหนดและนโยบาย", en: "Terms & Policies", ko: "약관 및 정책", ja: "規約・ポリシー" },
     contact: { th: "ติดต่อเรา", en: "Contact Us", ko: "문의하기", ja: "お問い合わせ" },
     deleteAccount: { th: "ลบบัญชี", en: "Delete Account", ko: "회원 탈퇴", ja: "退会" },
+    agreed: { th: "ยอมรับแล้ว", en: "Agreed", ko: "동의 완료", ja: "同意済み" },
   } as const;
   const L = (k: keyof typeof supportLabels) => supportLabels[k][lang as "th" | "en" | "ko" | "ja"] ?? supportLabels[k].en;
 
@@ -157,7 +162,14 @@ export default function MyPage() {
             <FileText className="h-4 w-4 text-primary" />
             {L("terms")}
           </span>
-          <span className="text-muted-foreground">›</span>
+          <span className="flex items-center gap-2">
+            {termsAt && privacyAt && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                {L("agreed")}
+              </span>
+            )}
+            <span className="text-muted-foreground">›</span>
+          </span>
         </button>
         <button
           onClick={notImplemented}
