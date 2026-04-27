@@ -14,6 +14,7 @@ import {
   writeStoredRelayState,
   clearStoredRelayState,
   readStoredRelayState,
+  normalizeRelayId,
 } from "@/lib/authRelay";
 
 const PUBLISHED_URL = "https://promptpay-buddy.lovable.app";
@@ -84,7 +85,7 @@ export default function AuthPage() {
     const params = new URLSearchParams(window.location.search);
     const lineDone = params.get("line_done");
     const lineError = params.get("line_error");
-    const state = params.get("state");
+    const state = normalizeRelayId(params.get("state"));
 
     if (lineError) {
       toast.error(`LINE 로그인 실패: ${lineError}`);
@@ -342,9 +343,7 @@ export default function AuthPage() {
       let lineUrl = res.data.url;
       const url = new URL(lineUrl);
       const state = url.searchParams.get("state") || "";
-      const relaySuffix = isStandalone ? "_pwa" : "_relay";
-      const relayStateValue = state + relaySuffix;
-      url.searchParams.set("state", relayStateValue);
+      const relayStateValue = state;
       lineUrl = url.toString();
       writeStoredRelayState(relayStateValue);
       setRelayState(relayStateValue);
