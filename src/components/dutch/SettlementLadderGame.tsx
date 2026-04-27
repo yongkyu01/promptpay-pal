@@ -49,12 +49,16 @@ const TRACK_COLORS = [
   "hsl(50 95% 55%)",
 ];
 
+// Animal traveler emojis – one per member slot
+const TRAVELERS = ["🐰", "🐶", "🐱", "🦊", "🐼", "🐵", "🐯", "🐻"];
+
 export default function SettlementLadderGame({ lang, members, total = 0, onApply }: SettlementLadderGameProps) {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [rungs, setRungs] = useState<boolean[][]>([]);
   const [run, setRun] = useState<LadderRun | null>(null);
-  const [revealed, setRevealed] = useState<boolean[]>([]); // which member's path is fully drawn
   const [activeMember, setActiveMember] = useState<number | null>(null);
+  // Members that have already arrived at their destination (show arrival pop)
+  const [arrived, setArrived] = useState<boolean[]>([]);
   const [cloudsLifted, setCloudsLifted] = useState(false);
 
   const columnCount = members.length;
@@ -68,8 +72,8 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     }
     setRungs(buildRungs(rowCount, columnCount));
     setRun(null);
-    setRevealed([]);
     setActiveMember(null);
+    setArrived([]);
     setCloudsLifted(false);
   }, [columnCount, rowCount]);
 
@@ -105,39 +109,59 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
   const shuffleRungs = () => {
     setRungs(buildRungs(rowCount, columnCount));
     setRun(null);
-    setRevealed([]);
     setActiveMember(null);
+    setArrived([]);
     setCloudsLifted(false);
+  };
+
+  const ensureRun = (): LadderRun => {
+    const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
+    if (!rungs.length) setRungs(r);
+    if (run) return run;
+    const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
+    const destinations = paths.map((p) => p[p.length - 1]);
+    const next = { paths, destinations };
+    setRun(next);
+    return next;
+  };
+
+  const playMember = (index: number) => {
+    if (activeMember !== null) return;
+    setCloudsLifted(true);
+    ensureRun();
+    setActiveMember(index);
+    setArrived((prev) => {
+      const base = prev.length === members.length ? [...prev] : members.map(() => false);
+      base[index] = false;
+      return base;
+    });
+    window.setTimeout(() => {
+      setArrived((prev) => {
+        const base = prev.length === members.length ? [...prev] : members.map(() => false);
+        base[index] = true;
+        return base;
+      });
+      setActiveMember(null);
+    }, PATH_REVEAL_MS + 100);
   };
 
   const startGame = () => {
     if (members.length < 2 || slots.length !== members.length) return;
-    const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
-    if (!rungs.length) setRungs(r);
     setCloudsLifted(true);
-    const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
-    const destinations = paths.map((p) => p[p.length - 1]);
-    setRun({ paths, destinations });
-    setRevealed(members.map(() => false));
-    setActiveMember(0);
-    // Reveal each player's path one after another
-    const perPath = PATH_REVEAL_MS + 200;
+    ensureRun();
+    setArrived(members.map(() => false));
+    // Play each member sequentially
+    const perPath = PATH_REVEAL_MS + 300;
     members.forEach((_, i) => {
       window.setTimeout(() => {
         setActiveMember(i);
-        setRevealed((prev) => {
-          const next = [...prev];
-          next[i] = false; // restart animation for this index
-          return next;
-        });
-        // Trigger draw on next tick
         window.setTimeout(() => {
-          setRevealed((prev) => {
-            const next = [...prev];
-            next[i] = true;
-            return next;
+          setArrived((prev) => {
+            const base = prev.length === members.length ? [...prev] : members.map(() => false);
+            base[i] = true;
+            return base;
           });
-        }, 30);
+        }, PATH_REVEAL_MS + 50);
       }, i * perPath);
     });
     window.setTimeout(() => setActiveMember(null), members.length * perPath + 200);
@@ -145,8 +169,8 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
 
   const reset = () => {
     setRun(null);
-    setRevealed([]);
     setActiveMember(null);
+    setArrived([]);
     setSlots(buildPresetSlots(members.length, total, lang));
     setRungs(buildRungs(rowCount, columnCount));
     setCloudsLifted(false);
@@ -200,41 +224,11 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
               <button
                 key={`top-${member.id}`}
                 type="button"
-                onClick={() => {
-                  if (activeMember !== null) return;
-                  // Ensure ladder exists and clouds are lifted
-                  const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
-                  if (!rungs.length) setRungs(r);
-                  setCloudsLifted(true);
-                  // Build (or reuse) run so destinations are stable
-                  let currentRun = run;
-                  if (!currentRun) {
-                    const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
-                    const destinations = paths.map((p) => p[p.length - 1]);
-                    currentRun = { paths, destinations };
-                    setRun(currentRun);
-                    setRevealed(members.map(() => false));
-                  }
-                  setActiveMember(index);
-                  setRevealed((prev) => {
-                    const base = prev.length === members.length ? prev : members.map(() => false);
-                    const next = [...base];
-                    next[index] = false;
-                    return next;
-                  });
-                  window.setTimeout(() => {
-                    setRevealed((prev) => {
-                      const base = prev.length === members.length ? prev : members.map(() => false);
-                      const next = [...base];
-                      next[index] = true;
-                      return next;
-                    });
-                  }, 30);
-                  window.setTimeout(() => setActiveMember(null), PATH_REVEAL_MS + 200);
-                }}
+                onClick={() => playMember(index)}
                 className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${isActive ? "scale-105 shadow-primary" : ""}`}
                 style={{ background: color, color: "white" }}
               >
+                <span className="mr-1">{TRAVELERS[index % TRAVELERS.length]}</span>
                 {member.name}
               </button>
             );
@@ -282,30 +276,106 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             )
           )}
 
-          {/* Animated player paths */}
-          {run &&
-            members.map((member, mIdx) => {
-              const path = run.paths[mIdx];
-              const points = buildPolyline(path);
-              const length = estimateLength(path);
-              const isRevealed = revealed[mIdx];
-              const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
-              return (
-                <polyline
-                  key={`path-${member.id}`}
-                  points={points}
+          {/* Animated player paths — only render the active member's trail + traveler */}
+          {run && activeMember !== null && (() => {
+            const mIdx = activeMember;
+            const path = run.paths[mIdx];
+            const d = buildSvgPath(path);
+            const length = estimateLength(path);
+            const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
+            const traveler = TRAVELERS[mIdx % TRAVELERS.length];
+            const endX = path[path.length - 1] * COL_W + COL_W / 2;
+            const endY = TOP_PAD + (path.length - 1) * ROW_H;
+            // Unique key forces remount → restarts SMIL animation
+            const animKey = `anim-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
+            return (
+              <g key={animKey}>
+                {/* Trail being drawn */}
+                <path
+                  d={d}
                   fill="none"
                   stroke={color}
                   strokeWidth={4}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{
-                    strokeDasharray: length,
-                    strokeDashoffset: isRevealed ? 0 : length,
-                    transition: `stroke-dashoffset ${PATH_REVEAL_MS}ms cubic-bezier(0.45, 0, 0.55, 1)`,
-                    opacity: activeMember === null || activeMember === mIdx ? 1 : 0.15,
-                  }}
-                />
+                  strokeDasharray={length}
+                  strokeDashoffset={length}
+                  opacity={0.85}
+                >
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    from={length}
+                    to={0}
+                    dur={`${PATH_REVEAL_MS}ms`}
+                    fill="freeze"
+                    calcMode="spline"
+                    keySplines="0.45 0 0.55 1"
+                    keyTimes="0;1"
+                  />
+                </path>
+                {/* Traveler emoji following the path */}
+                <g>
+                  <circle r={14} fill={color} opacity={0.25}>
+                    <animateMotion dur={`${PATH_REVEAL_MS}ms`} fill="freeze" rotate="0" path={d} />
+                  </circle>
+                  <text
+                    fontSize={22}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }}
+                  >
+                    {traveler}
+                    <animateMotion dur={`${PATH_REVEAL_MS}ms`} fill="freeze" rotate="0" path={d} />
+                  </text>
+                </g>
+                {/* Arrival burst at the destination */}
+                <g transform={`translate(${endX}, ${endY})`} opacity={0}>
+                  <circle r={4} fill={color}>
+                    <animate
+                      attributeName="r"
+                      from={4}
+                      to={26}
+                      dur="600ms"
+                      begin={`${PATH_REVEAL_MS - 50}ms`}
+                      fill="freeze"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      from={0.7}
+                      to={0}
+                      dur="600ms"
+                      begin={`${PATH_REVEAL_MS - 50}ms`}
+                      fill="freeze"
+                    />
+                  </circle>
+                  <animate
+                    attributeName="opacity"
+                    from={0}
+                    to={1}
+                    dur="50ms"
+                    begin={`${PATH_REVEAL_MS - 50}ms`}
+                    fill="freeze"
+                  />
+                </g>
+              </g>
+            );
+          })()}
+          {/* Persistent arrival markers for finished members (no active animation) */}
+          {run && activeMember === null &&
+            members.map((member, mIdx) => {
+              if (!arrived[mIdx]) return null;
+              const path = run.paths[mIdx];
+              const endX = path[path.length - 1] * COL_W + COL_W / 2;
+              const endY = TOP_PAD + (path.length - 1) * ROW_H;
+              const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
+              const traveler = TRAVELERS[mIdx % TRAVELERS.length];
+              return (
+                <g key={`arrived-${member.id}`} transform={`translate(${endX}, ${endY})`}>
+                  <circle r={14} fill={color} opacity={0.2} />
+                  <text fontSize={22} textAnchor="middle" dominantBaseline="central">
+                    {traveler}
+                  </text>
+                </g>
               );
             })}
         </svg>
@@ -514,6 +584,25 @@ function buildPolyline(path: number[]): string {
     pts.push(`${curCol * COL_W + COL_W / 2},${TOP_PAD + i * ROW_H}`);
   }
   return pts.join(" ");
+}
+
+/** Same waypoints as buildPolyline but as an SVG path "M x,y L x,y ..." string for animateMotion. */
+function buildSvgPath(path: number[]): string {
+  const pts: Array<[number, number]> = [];
+  pts.push([path[0] * COL_W + COL_W / 2, TOP_PAD]);
+  for (let i = 1; i < path.length; i++) {
+    const prevCol = path[i - 1];
+    const curCol = path[i];
+    const rowMidY = TOP_PAD + (i - 1) * ROW_H + ROW_H / 2;
+    if (prevCol !== curCol) {
+      pts.push([prevCol * COL_W + COL_W / 2, rowMidY]);
+      pts.push([curCol * COL_W + COL_W / 2, rowMidY]);
+    }
+    pts.push([curCol * COL_W + COL_W / 2, TOP_PAD + i * ROW_H]);
+  }
+  return pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`)
+    .join(" ");
 }
 
 function estimateLength(path: number[]): number {
