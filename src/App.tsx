@@ -34,7 +34,9 @@ function AppContent() {
   const hasAuthRelayCallback =
     searchParams.has("start_google") ||
     searchParams.has("oauth_relay") ||
-    (searchParams.has("code") && searchParams.has("state"));
+    (searchParams.has("code") && searchParams.has("state")) ||
+    searchParams.has("line_done") ||
+    searchParams.has("line_error");
 
   // Public legal pages — accessible without login.
   if (location.pathname === "/legal/terms") {
