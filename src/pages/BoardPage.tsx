@@ -47,6 +47,21 @@ function localized(post: Post, lang: Lang): { title: string; content: string } {
   return { title: post.title, content: post.content };
 }
 
+// Render minimal markdown: **bold** segments inside plain text.
+function renderRichText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+      return (
+        <strong key={i} className="font-bold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 const LABELS = {
   notice: { th: "ประกาศ", en: "Notices", ko: "공지사항", ja: "お知らせ" },
   support: { th: "ศูนย์ช่วยเหลือ", en: "Help Center", ko: "고객센터", ja: "カスタマーセンター" },
@@ -299,7 +314,7 @@ export default function BoardPage() {
                 {isOpen && (
                   <div className="px-4 pb-4 border-t border-border/50 pt-3">
                     <p className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
-                      {view.content}
+                      {renderRichText(view.content)}
                     </p>
                     {isAdmin && (
                       <div className="flex gap-2 mt-3">
