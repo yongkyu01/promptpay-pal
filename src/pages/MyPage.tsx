@@ -139,7 +139,7 @@ export default function MyPage() {
       <div className="rounded-2xl border border-border bg-card p-2 space-y-1">
         <p className="px-3 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{L("title")}</p>
         <button
-          onClick={notImplemented}
+          onClick={() => navigate("/board/notice")}
           className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
         >
           <span className="flex items-center gap-3">
@@ -149,7 +149,7 @@ export default function MyPage() {
           <span className="text-muted-foreground">›</span>
         </button>
         <button
-          onClick={notImplemented}
+          onClick={() => navigate("/board/support")}
           className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
         >
           <span className="flex items-center gap-3">
