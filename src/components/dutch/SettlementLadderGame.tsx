@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dices, Play, Trophy, RotateCcw, CheckCircle2, Wand2, Shuffle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,9 +60,23 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
   // Members that have already arrived at their destination (show arrival pop)
   const [arrived, setArrived] = useState<boolean[]>([]);
   const [cloudsLifted, setCloudsLifted] = useState(false);
+  // Animation progress 0..1 for the active member (drives both trail + traveler)
+  const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startTsRef = useRef<number>(0);
+  const activeMemberRef = useRef<number | null>(null);
+  const arrivalTimerRef = useRef<number | null>(null);
 
   const columnCount = members.length;
   const rowCount = Math.max(8, members.length * 2 + 4);
+
+  // Cleanup any running animation on unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (arrivalTimerRef.current != null) window.clearTimeout(arrivalTimerRef.current);
+    };
+  }, []);
 
   // Build rungs whenever the grid size changes
   useEffect(() => {
@@ -125,24 +139,57 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     return next;
   };
 
-  const playMember = (index: number) => {
-    if (activeMember !== null) return;
-    setCloudsLifted(true);
-    ensureRun();
+  const animateMember = (index: number) => {
+    // Cancel any in-flight animation
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (arrivalTimerRef.current != null) {
+      window.clearTimeout(arrivalTimerRef.current);
+      arrivalTimerRef.current = null;
+    }
+    activeMemberRef.current = index;
     setActiveMember(index);
+    setProgress(0);
     setArrived((prev) => {
       const base = prev.length === members.length ? [...prev] : members.map(() => false);
       base[index] = false;
       return base;
     });
-    window.setTimeout(() => {
-      setArrived((prev) => {
-        const base = prev.length === members.length ? [...prev] : members.map(() => false);
-        base[index] = true;
-        return base;
-      });
-      setActiveMember(null);
-    }, PATH_REVEAL_MS + 100);
+
+    startTsRef.current = performance.now();
+    const tick = (now: number) => {
+      if (activeMemberRef.current !== index) return; // got cancelled
+      const elapsed = now - startTsRef.current;
+      const p = Math.min(1, elapsed / PATH_REVEAL_MS);
+      // ease in-out
+      const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      setProgress(eased);
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+        arrivalTimerRef.current = window.setTimeout(() => {
+          setArrived((prev) => {
+            const base = prev.length === members.length ? [...prev] : members.map(() => false);
+            base[index] = true;
+            return base;
+          });
+          if (activeMemberRef.current === index) {
+            activeMemberRef.current = null;
+            setActiveMember(null);
+          }
+        }, 120);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  const playMember = (index: number) => {
+    setCloudsLifted(true);
+    ensureRun();
+    animateMember(index);
   };
 
   const startGame = () => {
@@ -154,23 +201,25 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     const perPath = PATH_REVEAL_MS + 300;
     members.forEach((_, i) => {
       window.setTimeout(() => {
-        setActiveMember(i);
-        window.setTimeout(() => {
-          setArrived((prev) => {
-            const base = prev.length === members.length ? [...prev] : members.map(() => false);
-            base[i] = true;
-            return base;
-          });
-        }, PATH_REVEAL_MS + 50);
+        animateMember(i);
       }, i * perPath);
     });
-    window.setTimeout(() => setActiveMember(null), members.length * perPath + 200);
   };
 
   const reset = () => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (arrivalTimerRef.current != null) {
+      window.clearTimeout(arrivalTimerRef.current);
+      arrivalTimerRef.current = null;
+    }
+    activeMemberRef.current = null;
     setRun(null);
     setActiveMember(null);
     setArrived([]);
+    setProgress(0);
     setSlots(buildPresetSlots(members.length, total, lang));
     setRungs(buildRungs(rowCount, columnCount));
     setCloudsLifted(false);
@@ -280,19 +329,19 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
           {run && activeMember !== null && (() => {
             const mIdx = activeMember;
             const path = run.paths[mIdx];
-            const d = buildSvgPath(path);
-            const length = estimateLength(path);
+            const waypoints = buildWaypoints(path);
+            const d = waypointsToPath(waypoints);
+            const segments = waypointsToSegments(waypoints);
+            const totalLen = segments[segments.length - 1]?.cumEnd || 1;
             const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
             const traveler = TRAVELERS[mIdx % TRAVELERS.length];
-            const endX = path[path.length - 1] * COL_W + COL_W / 2;
-            const endY = TOP_PAD + (path.length - 1) * ROW_H;
-            // Unique key forces remount → restarts SMIL animation
-            const animKey = `anim-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
-            const pathId = `ladder-path-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
+            // Trail dash: reveal proportional to progress
+            const dashOffset = totalLen * (1 - progress);
+            // Traveler position: interpolate along waypoints by arc length
+            const target = totalLen * progress;
+            const pos = pointAt(segments, target);
             return (
-              <g key={animKey}>
-                {/* Hidden path used as motion reference */}
-                <path id={pathId} d={d} fill="none" stroke="none" />
+              <g>
                 {/* Trail being drawn */}
                 <path
                   d={d}
@@ -301,83 +350,22 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                   strokeWidth={4}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeDasharray={length}
-                  strokeDashoffset={length}
+                  strokeDasharray={totalLen}
+                  strokeDashoffset={dashOffset}
                   opacity={0.85}
-                >
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from={length}
-                    to={0}
-                    dur={`${PATH_REVEAL_MS}ms`}
-                    fill="freeze"
-                    calcMode="spline"
-                    keySplines="0.45 0 0.55 1"
-                    keyTimes="0;1"
-                  />
-                </path>
+                />
                 {/* Traveler emoji following the path */}
-                <g>
-                  <circle cx={0} cy={0} r={14} fill={color} opacity={0.25}>
-                    <animateMotion
-                      dur={`${PATH_REVEAL_MS}ms`}
-                      begin="0s"
-                      fill="freeze"
-                      rotate="0"
-                      calcMode="linear"
-                    >
-                      <mpath href={`#${pathId}`} />
-                    </animateMotion>
-                  </circle>
-                  <text
-                    x={0}
-                    y={0}
-                    fontSize={22}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }}
-                  >
-                    {traveler}
-                    <animateMotion
-                      dur={`${PATH_REVEAL_MS}ms`}
-                      begin="0s"
-                      fill="freeze"
-                      rotate="0"
-                      calcMode="linear"
-                    >
-                      <mpath href={`#${pathId}`} />
-                    </animateMotion>
-                  </text>
-                </g>
-                {/* Arrival burst at the destination */}
-                <g transform={`translate(${endX}, ${endY})`} opacity={0}>
-                  <circle r={4} fill={color}>
-                    <animate
-                      attributeName="r"
-                      from={4}
-                      to={26}
-                      dur="600ms"
-                      begin={`${PATH_REVEAL_MS - 50}ms`}
-                      fill="freeze"
-                    />
-                    <animate
-                      attributeName="opacity"
-                      from={0.7}
-                      to={0}
-                      dur="600ms"
-                      begin={`${PATH_REVEAL_MS - 50}ms`}
-                      fill="freeze"
-                    />
-                  </circle>
-                  <animate
-                    attributeName="opacity"
-                    from={0}
-                    to={1}
-                    dur="50ms"
-                    begin={`${PATH_REVEAL_MS - 50}ms`}
-                    fill="freeze"
-                  />
-                </g>
+                <circle cx={pos.x} cy={pos.y} r={14} fill={color} opacity={0.25} />
+                <text
+                  x={pos.x}
+                  y={pos.y}
+                  fontSize={22}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }}
+                >
+                  {traveler}
+                </text>
               </g>
             );
           })()}
@@ -647,4 +635,57 @@ function buildSvgPath(path: number[]): string {
 function estimateLength(path: number[]): number {
   // Rough overestimate so dasharray fully hides initially
   return (path.length * ROW_H + path.length * COL_W) * 2;
+}
+
+/** Build the list of waypoint coordinates for the polyline traversal. */
+function buildWaypoints(path: number[]): Array<[number, number]> {
+  const pts: Array<[number, number]> = [];
+  pts.push([path[0] * COL_W + COL_W / 2, TOP_PAD]);
+  for (let i = 1; i < path.length; i++) {
+    const prevCol = path[i - 1];
+    const curCol = path[i];
+    const rowMidY = TOP_PAD + (i - 1) * ROW_H + ROW_H / 2;
+    if (prevCol !== curCol) {
+      pts.push([prevCol * COL_W + COL_W / 2, rowMidY]);
+      pts.push([curCol * COL_W + COL_W / 2, rowMidY]);
+    }
+    pts.push([curCol * COL_W + COL_W / 2, TOP_PAD + i * ROW_H]);
+  }
+  return pts;
+}
+
+function waypointsToPath(pts: Array<[number, number]>): string {
+  return pts.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
+}
+
+interface Segment {
+  x1: number; y1: number; x2: number; y2: number;
+  len: number; cumStart: number; cumEnd: number;
+}
+
+function waypointsToSegments(pts: Array<[number, number]>): Segment[] {
+  const segs: Segment[] = [];
+  let cum = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1];
+    const [x2, y2] = pts[i];
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    segs.push({ x1, y1, x2, y2, len, cumStart: cum, cumEnd: cum + len });
+    cum += len;
+  }
+  return segs;
+}
+
+function pointAt(segs: Segment[], distance: number): { x: number; y: number } {
+  if (segs.length === 0) return { x: 0, y: 0 };
+  if (distance <= 0) return { x: segs[0].x1, y: segs[0].y1 };
+  const last = segs[segs.length - 1];
+  if (distance >= last.cumEnd) return { x: last.x2, y: last.y2 };
+  for (const s of segs) {
+    if (distance <= s.cumEnd) {
+      const local = (distance - s.cumStart) / (s.len || 1);
+      return { x: s.x1 + (s.x2 - s.x1) * local, y: s.y1 + (s.y2 - s.y1) * local };
+    }
+  }
+  return { x: last.x2, y: last.y2 };
 }
