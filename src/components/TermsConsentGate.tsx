@@ -5,6 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldCheck, Loader2 } from "lucide-react";
+import { LANG_OPTIONS, type Lang } from "@/lib/i18n";
 
 const L = {
   title: { th: "ยอมรับข้อกำหนด", en: "Accept Terms", ko: "약관 동의", ja: "規約への同意" },
@@ -23,7 +24,7 @@ const L = {
 
 export default function TermsConsentGate({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
-  const { lang } = useApp();
+  const { lang, setLang } = useApp();
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [needsConsent, setNeedsConsent] = useState(false);
@@ -115,6 +116,27 @@ export default function TermsConsentGate({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-5">
+        <div className="flex justify-end">
+          <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-sm">
+            {LANG_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setLang(opt.key as Lang)}
+                className={
+                  "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors " +
+                  (lang === opt.key
+                    ? "bg-primary text-primary-foreground shadow-primary"
+                    : "text-muted-foreground hover:bg-secondary")
+                }
+                aria-label={opt.label}
+              >
+                <span>{opt.flag}</span>
+                <span>{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-primary">
             <ShieldCheck className="h-7 w-7 text-primary-foreground" />
