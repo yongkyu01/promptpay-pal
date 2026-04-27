@@ -636,3 +636,56 @@ function estimateLength(path: number[]): number {
   // Rough overestimate so dasharray fully hides initially
   return (path.length * ROW_H + path.length * COL_W) * 2;
 }
+
+/** Build the list of waypoint coordinates for the polyline traversal. */
+function buildWaypoints(path: number[]): Array<[number, number]> {
+  const pts: Array<[number, number]> = [];
+  pts.push([path[0] * COL_W + COL_W / 2, TOP_PAD]);
+  for (let i = 1; i < path.length; i++) {
+    const prevCol = path[i - 1];
+    const curCol = path[i];
+    const rowMidY = TOP_PAD + (i - 1) * ROW_H + ROW_H / 2;
+    if (prevCol !== curCol) {
+      pts.push([prevCol * COL_W + COL_W / 2, rowMidY]);
+      pts.push([curCol * COL_W + COL_W / 2, rowMidY]);
+    }
+    pts.push([curCol * COL_W + COL_W / 2, TOP_PAD + i * ROW_H]);
+  }
+  return pts;
+}
+
+function waypointsToPath(pts: Array<[number, number]>): string {
+  return pts.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
+}
+
+interface Segment {
+  x1: number; y1: number; x2: number; y2: number;
+  len: number; cumStart: number; cumEnd: number;
+}
+
+function waypointsToSegments(pts: Array<[number, number]>): Segment[] {
+  const segs: Segment[] = [];
+  let cum = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1];
+    const [x2, y2] = pts[i];
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    segs.push({ x1, y1, x2, y2, len, cumStart: cum, cumEnd: cum + len });
+    cum += len;
+  }
+  return segs;
+}
+
+function pointAt(segs: Segment[], distance: number): { x: number; y: number } {
+  if (segs.length === 0) return { x: 0, y: 0 };
+  if (distance <= 0) return { x: segs[0].x1, y: segs[0].y1 };
+  const last = segs[segs.length - 1];
+  if (distance >= last.cumEnd) return { x: last.x2, y: last.y2 };
+  for (const s of segs) {
+    if (distance <= s.cumEnd) {
+      const local = (distance - s.cumStart) / (s.len || 1);
+      return { x: s.x1 + (s.x2 - s.x1) * local, y: s.y1 + (s.y2 - s.y1) * local };
+    }
+  }
+  return { x: last.x2, y: last.y2 };
+}
