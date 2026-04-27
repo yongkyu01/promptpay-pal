@@ -192,7 +192,7 @@ export default function BoardPage() {
         </button>
         <Icon className="h-5 w-5 text-primary" />
         <h1 className="text-lg font-bold flex-1">{L(boardKey)}</h1>
-        {isAdmin && !composing && (
+        {isAdmin && !composing && boardKey !== "support" && (
           <button
             onClick={startNew}
             className="flex items-center gap-1 rounded-full gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-primary active:scale-95 transition-transform"
@@ -204,19 +204,34 @@ export default function BoardPage() {
       </div>
 
       {boardKey === "support" && !composing && !editing && (
-        <button
-          onClick={() => navigate("/inquiry")}
-          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <HelpCircle className="h-5 w-5 text-primary" />
-          </span>
-          <span className="flex-1">
-            <span className="block text-sm font-semibold text-foreground">{L("contact")}</span>
-            <span className="block text-xs text-muted-foreground">{L("contactDesc")}</span>
-          </span>
-          <span className="text-muted-foreground">›</span>
-        </button>
+        <div className="mb-4 space-y-2">
+          <button
+            onClick={() => navigate("/board/faq")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-foreground">{L("faq")}</span>
+              <span className="block text-xs text-muted-foreground">{L("faqDesc")}</span>
+            </span>
+            <span className="text-muted-foreground">›</span>
+          </button>
+          <button
+            onClick={() => navigate("/inquiry")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <HelpCircle className="h-5 w-5 text-primary" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-foreground">{L("contact")}</span>
+              <span className="block text-xs text-muted-foreground">{L("contactDesc")}</span>
+            </span>
+            <span className="text-muted-foreground">›</span>
+          </button>
+        </div>
       )}
 
       {composing && (
