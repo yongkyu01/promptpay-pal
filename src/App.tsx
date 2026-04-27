@@ -21,6 +21,7 @@ import MyPage from "@/pages/MyPage";
 import BoardPage from "@/pages/BoardPage";
 import DeleteAccountPage from "@/pages/DeleteAccountPage";
 import InquiryPage from "@/pages/InquiryPage";
+import AdminUsersPage from "@/pages/AdminUsersPage";
 import TermsConsentGate from "@/components/TermsConsentGate";
 import PublicLegalPage from "@/pages/PublicLegalPage";
 import NotFound from "./pages/NotFound.tsx";
@@ -76,6 +77,7 @@ function AppContent() {
         <Route path="/board/:board" element={<BoardPage />} />
         <Route path="/inquiry" element={<InquiryPage />} />
         <Route path="/me/delete" element={<DeleteAccountPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <AddExpenseFAB />

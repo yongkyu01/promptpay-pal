@@ -3,14 +3,16 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCircle, LogOut, QrCode, Wallet, Save, Megaphone, Headphones, FileText, UserX } from "lucide-react";
+import { UserCircle, LogOut, QrCode, Wallet, Save, Megaphone, Headphones, FileText, UserX, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export default function MyPage() {
   const { lang } = useApp();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isAdmin } = useIsAdmin();
   const [displayName, setDisplayName] = useState("");
   const [promptpayId, setPromptpayId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,15 @@ export default function MyPage() {
           <Wallet className="h-4 w-4 text-primary" />
           {t("budgetSettings", lang)}
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/admin/users")}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+          >
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            {lang === "ko" ? "회원 관리" : lang === "ja" ? "ユーザー管理" : lang === "th" ? "จัดการสมาชิก" : "User Management"}
+          </button>
+        )}
         <button
           onClick={() => signOut()}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
