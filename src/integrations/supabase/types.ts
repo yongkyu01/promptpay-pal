@@ -142,6 +142,74 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiries: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_private: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_private?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_private?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inquiry_replies: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          inquiry_id: string
+          is_private: boolean
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          inquiry_id: string
+          is_private?: boolean
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          inquiry_id?: string
+          is_private?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_replies_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           author_id: string
