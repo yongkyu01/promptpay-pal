@@ -4,7 +4,7 @@ import { t } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, Trash2, Users as UsersIcon, Sparkles, QrCode, PartyPopper, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import generatePayload from "promptpay-qr";
@@ -159,6 +159,41 @@ export default function DutchSplitPage() {
     }).eq("id", itemId);
     queryClient.invalidateQueries({ queryKey: ["split_items", id] });
   };
+
+  // Local in-flight edits so totals update instantly while user types,
+  // and DB writes are debounced.
+  const [edits, setEdits] = useState<Record<string, { quantity?: number; unit_price?: number; name?: string }>>({});
+  const editTimers = useRef<Record<string, number>>({});
+  const queueItemUpdate = (itemId: string, patch: { quantity?: number; unit_price?: number; name?: string }) => {
+    setEdits((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }));
+    if (editTimers.current[itemId]) window.clearTimeout(editTimers.current[itemId]);
+    editTimers.current[itemId] = window.setTimeout(() => {
+      const item = items.find((i) => i.id === itemId);
+      if (!item) return;
+      const merged = { ...item, ...edits[itemId], ...patch };
+      void updateItem(itemId, {
+        name: merged.name,
+        quantity: Math.max(1, Number(merged.quantity) || 1),
+        unit_price: Number(merged.unit_price) || 0,
+      });
+    }, 350);
+  };
+  // Clear local edits when fresh server data arrives matching the queued values
+  useEffect(() => {
+    setEdits((prev) => {
+      const next: typeof prev = {};
+      for (const [id, e] of Object.entries(prev)) {
+        const item = items.find((i) => i.id === id);
+        if (!item) continue;
+        const same =
+          (e.quantity == null || Number(item.quantity) === Number(e.quantity)) &&
+          (e.unit_price == null || Number(item.unit_price) === Number(e.unit_price)) &&
+          (e.name == null || item.name === e.name);
+        if (!same) next[id] = e;
+      }
+      return next;
+    });
+  }, [items]);
 
   const removeItem = async (itemId: string) => {
     await supabase.from("split_items").delete().eq("id", itemId);
