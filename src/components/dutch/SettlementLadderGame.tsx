@@ -459,11 +459,21 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
           className="mt-3 grid gap-2"
           style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, 4)}, minmax(0, 1fr))` }}
         >
-          {slots.map((slot, i) => (
+          {slots.map((slot, i) => {
+            // After the game runs, find which member landed at this slot.
+            const winnerIdx = run ? run.destinations.findIndex((d, mi) => d === i && arrived[mi]) : -1;
+            const winner = winnerIdx >= 0 ? members[winnerIdx] : null;
+            return (
             <div key={`slot-${i}`} className="rounded-xl border border-border bg-background p-2">
               <div className="mb-1 truncate text-center text-[10px] font-semibold text-muted-foreground">
-                <span className="mr-0.5">{TRAVELERS[i % TRAVELERS.length]}</span>
-                {members[i]?.name ?? `#${i + 1}`}
+                {winner ? (
+                  <>
+                    <span className="mr-0.5">{TRAVELERS[winnerIdx % TRAVELERS.length]}</span>
+                    {winner.name}
+                  </>
+                ) : (
+                  <span className="opacity-50">—</span>
+                )}
               </div>
               <Input
                 type="number"
