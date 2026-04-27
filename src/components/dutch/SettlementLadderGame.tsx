@@ -295,38 +295,54 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
 
         {/* Cloud cover overlay */}
         <div
-          className={`pointer-events-none absolute inset-x-0 top-[10%] h-[80%] transition-all duration-700 ease-out ${
+          className={`absolute inset-x-0 -top-[5%] h-[110%] transition-all duration-700 ease-out ${
             cloudsLifted ? "opacity-0 -translate-y-4 scale-110" : "opacity-100"
           }`}
           aria-hidden
         >
           <svg
-            className="absolute inset-0 h-full w-full"
+            className="pointer-events-none absolute inset-0 h-full w-full"
             viewBox="0 0 400 200"
             preserveAspectRatio="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              <radialGradient id="cloudFill" cx="50%" cy="50%" r="50%">
+              <radialGradient id="cloudFill" cx="50%" cy="50%" r="55%">
                 <stop offset="0%" stopColor="white" stopOpacity="1" />
-                <stop offset="80%" stopColor="white" stopOpacity="0.95" />
+                <stop offset="50%" stopColor="white" stopOpacity="0.98" />
+                <stop offset="80%" stopColor="white" stopOpacity="0.6" />
                 <stop offset="100%" stopColor="white" stopOpacity="0" />
               </radialGradient>
+              <filter id="cloudBlur" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" />
+              </filter>
             </defs>
-            <g fill="url(#cloudFill)">
-              <ellipse cx="60" cy="110" rx="55" ry="38" />
-              <ellipse cx="130" cy="85" rx="65" ry="42" />
-              <ellipse cx="210" cy="105" rx="70" ry="46" />
-              <ellipse cx="290" cy="80" rx="60" ry="40" />
-              <ellipse cx="350" cy="115" rx="55" ry="38" />
-              <ellipse cx="170" cy="135" rx="60" ry="34" />
-              <ellipse cx="260" cy="140" rx="55" ry="32" />
+            <g fill="url(#cloudFill)" filter="url(#cloudBlur)">
+              <ellipse cx="50" cy="60" rx="70" ry="48" />
+              <ellipse cx="140" cy="40" rx="80" ry="52" />
+              <ellipse cx="230" cy="55" rx="85" ry="56" />
+              <ellipse cx="320" cy="38" rx="75" ry="50" />
+              <ellipse cx="380" cy="70" rx="70" ry="48" />
+              <ellipse cx="60" cy="110" rx="75" ry="55" />
+              <ellipse cx="150" cy="100" rx="85" ry="60" />
+              <ellipse cx="240" cy="110" rx="90" ry="62" />
+              <ellipse cx="330" cy="100" rx="80" ry="58" />
+              <ellipse cx="380" cy="115" rx="70" ry="52" />
+              <ellipse cx="80" cy="155" rx="70" ry="48" />
+              <ellipse cx="180" cy="165" rx="80" ry="50" />
+              <ellipse cx="270" cy="160" rx="80" ry="50" />
+              <ellipse cx="350" cy="155" rx="70" ry="48" />
             </g>
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="rounded-full bg-background/90 px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={startGame}
+              disabled={activeMember !== null}
+              className="pointer-events-auto rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-60"
+            >
               ☁️ {t("startLadder", lang)} ▶︎
-            </div>
+            </button>
           </div>
         </div>
         </div>
