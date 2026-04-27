@@ -295,42 +295,36 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
 
         {/* Cloud cover overlay */}
         <div
-          className={`pointer-events-none absolute inset-0 transition-all duration-700 ease-out ${
+          className={`pointer-events-none absolute inset-x-0 top-1/4 h-1/2 transition-all duration-700 ease-out ${
             cloudsLifted ? "opacity-0 -translate-y-4 scale-110" : "opacity-100"
           }`}
           aria-hidden
         >
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-card/95 via-card/85 to-card/95 backdrop-blur-md" />
           <svg
             className="absolute inset-0 h-full w-full"
-            viewBox="0 0 400 400"
+            viewBox="0 0 400 200"
             preserveAspectRatio="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
               <radialGradient id="cloudFill" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="white" stopOpacity="1" />
-                <stop offset="100%" stopColor="white" stopOpacity="0.7" />
+                <stop offset="80%" stopColor="white" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="white" stopOpacity="0" />
               </radialGradient>
             </defs>
             <g fill="url(#cloudFill)">
-              <ellipse cx="70" cy="60" rx="55" ry="32" />
-              <ellipse cx="140" cy="45" rx="60" ry="34" />
-              <ellipse cx="220" cy="65" rx="58" ry="30" />
-              <ellipse cx="310" cy="50" rx="62" ry="34" />
-              <ellipse cx="60" cy="160" rx="55" ry="30" />
-              <ellipse cx="180" cy="150" rx="70" ry="36" />
-              <ellipse cx="300" cy="170" rx="58" ry="32" />
-              <ellipse cx="90" cy="260" rx="60" ry="32" />
-              <ellipse cx="220" cy="270" rx="65" ry="34" />
-              <ellipse cx="330" cy="255" rx="55" ry="30" />
-              <ellipse cx="70" cy="350" rx="58" ry="30" />
-              <ellipse cx="180" cy="340" rx="62" ry="32" />
-              <ellipse cx="300" cy="355" rx="60" ry="30" />
+              <ellipse cx="60" cy="110" rx="55" ry="38" />
+              <ellipse cx="130" cy="85" rx="65" ry="42" />
+              <ellipse cx="210" cy="105" rx="70" ry="46" />
+              <ellipse cx="290" cy="80" rx="60" ry="40" />
+              <ellipse cx="350" cy="115" rx="55" ry="38" />
+              <ellipse cx="170" cy="135" rx="60" ry="34" />
+              <ellipse cx="260" cy="140" rx="55" ry="32" />
             </g>
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="rounded-full bg-background/80 px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
+            <div className="rounded-full bg-background/90 px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
               ☁️ {t("startLadder", lang)} ▶︎
             </div>
           </div>
