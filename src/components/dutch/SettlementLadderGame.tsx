@@ -504,22 +504,36 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             const slot = slots[run.destinations[i]];
             const minAmt = Math.min(...slots.map((s) => s.amount));
             const isLucky = slot?.amount === minAmt;
-            if (!arrived[i]) return null;
+            const isArrived = !!arrived[i];
+            const isMoving = activeMember === i;
+            if (!isArrived && !isMoving) return null;
             return (
               <div
                 key={`res-${m.id}`}
-                className={`flex items-center justify-between rounded-xl px-3 py-2 animate-fade-in ${isLucky ? "bg-primary/10" : "bg-secondary/50"}`}
+                className={`flex items-center justify-between rounded-xl px-3 py-2 animate-fade-in transition-all ${
+                  !isArrived
+                    ? "bg-secondary/30 opacity-60"
+                    : isLucky
+                    ? "bg-primary/10"
+                    : "bg-secondary/50"
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-base leading-none">{TRAVELERS[i % TRAVELERS.length]}</span>
+                  <span className={`text-base leading-none ${isMoving && !isArrived ? "animate-bounce" : ""}`}>
+                    {TRAVELERS[i % TRAVELERS.length]}
+                  </span>
                   <span className="text-sm font-semibold text-foreground">{m.name}</span>
-                  {slot?.label && (
+                  {isArrived && slot?.label && (
                     <span className="text-[10px] text-muted-foreground">· {slot.label}</span>
                   )}
                 </div>
-                <span className={`text-sm font-bold ${isLucky ? "text-primary" : "text-foreground"}`}>
-                  ฿{(slot?.amount || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </span>
+                {isArrived ? (
+                  <span className={`text-sm font-bold ${isLucky ? "text-primary" : "text-foreground"}`}>
+                    ฿{(slot?.amount || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground">…</span>
+                )}
               </div>
             );
           })}
