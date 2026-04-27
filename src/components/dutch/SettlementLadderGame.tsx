@@ -300,7 +300,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
           }`}
           aria-hidden
         >
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/95 via-white/85 to-white/95 dark:from-slate-200/90 dark:via-slate-100/80 dark:to-slate-200/90 backdrop-blur-md" />
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-card/95 via-card/85 to-card/95 backdrop-blur-md" />
           <svg
             className="absolute inset-0 h-full w-full"
             viewBox="0 0 400 400"
@@ -330,7 +330,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             </g>
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="rounded-full bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+            <div className="rounded-full bg-background/80 px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
               ☁️ {t("startLadder", lang)} ▶︎
             </div>
           </div>
