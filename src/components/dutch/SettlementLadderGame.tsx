@@ -34,6 +34,9 @@ const ROW_H = 36;
 const TOP_PAD = 12;
 const BOTTOM_PAD = 12;
 
+// Path reveal animation duration (ms)
+const PATH_REVEAL_MS = 2600;
+
 // Color palette for player tracks (HSL via CSS vars when available, fallback to fixed hues)
 const TRACK_COLORS = [
   "hsl(0 84% 60%)",
@@ -118,7 +121,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setRevealed(members.map(() => false));
     setActiveMember(0);
     // Reveal each player's path one after another
-    const perPath = 1100;
+    const perPath = PATH_REVEAL_MS + 200;
     members.forEach((_, i) => {
       window.setTimeout(() => {
         setActiveMember(i);
@@ -213,7 +216,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                       return next;
                     });
                   }, 30);
-                  window.setTimeout(() => setActiveMember(null), 1100);
+                  window.setTimeout(() => setActiveMember(null), PATH_REVEAL_MS + 200);
                 }}
                 className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${isActive ? "scale-105 shadow-primary" : ""}`}
                 style={{ background: color, color: "white" }}
@@ -285,7 +288,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                   style={{
                     strokeDasharray: length,
                     strokeDashoffset: isRevealed ? 0 : length,
-                    transition: "stroke-dashoffset 1s ease-in-out",
+                    transition: `stroke-dashoffset ${PATH_REVEAL_MS}ms cubic-bezier(0.45, 0, 0.55, 1)`,
                     opacity: activeMember === null || activeMember === mIdx ? 1 : 0.15,
                   }}
                 />
@@ -295,13 +298,13 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
 
         {/* Cloud cover overlay */}
         <div
-          className={`absolute inset-x-0 -top-[5%] h-[110%] transition-all duration-700 ease-out ${
-            cloudsLifted ? "opacity-0 -translate-y-4 scale-110" : "opacity-100"
+          className={`absolute inset-x-0 top-[15%] h-[70%] transition-all duration-1000 ease-out ${
+            cloudsLifted ? "pointer-events-none opacity-0 blur-md -translate-y-3 scale-105" : "opacity-100"
           }`}
           aria-hidden
         >
           <svg
-            className="pointer-events-none absolute inset-0 h-full w-full"
+            className="pointer-events-none absolute inset-0 h-full w-full animate-cloud-drift-slow"
             viewBox="0 0 400 200"
             preserveAspectRatio="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -309,29 +312,23 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             <defs>
               <radialGradient id="cloudFill" cx="50%" cy="50%" r="55%">
                 <stop offset="0%" stopColor="white" stopOpacity="1" />
-                <stop offset="50%" stopColor="white" stopOpacity="0.98" />
-                <stop offset="80%" stopColor="white" stopOpacity="0.6" />
+                <stop offset="45%" stopColor="white" stopOpacity="0.95" />
+                <stop offset="75%" stopColor="white" stopOpacity="0.45" />
                 <stop offset="100%" stopColor="white" stopOpacity="0" />
               </radialGradient>
-              <filter id="cloudBlur" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="6" />
+              <filter id="cloudBlur" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="9" />
               </filter>
             </defs>
-            <g fill="url(#cloudFill)" filter="url(#cloudBlur)">
-              <ellipse cx="50" cy="60" rx="70" ry="48" />
-              <ellipse cx="140" cy="40" rx="80" ry="52" />
-              <ellipse cx="230" cy="55" rx="85" ry="56" />
-              <ellipse cx="320" cy="38" rx="75" ry="50" />
-              <ellipse cx="380" cy="70" rx="70" ry="48" />
-              <ellipse cx="60" cy="110" rx="75" ry="55" />
-              <ellipse cx="150" cy="100" rx="85" ry="60" />
-              <ellipse cx="240" cy="110" rx="90" ry="62" />
-              <ellipse cx="330" cy="100" rx="80" ry="58" />
-              <ellipse cx="380" cy="115" rx="70" ry="52" />
-              <ellipse cx="80" cy="155" rx="70" ry="48" />
-              <ellipse cx="180" cy="165" rx="80" ry="50" />
-              <ellipse cx="270" cy="160" rx="80" ry="50" />
-              <ellipse cx="350" cy="155" rx="70" ry="48" />
+            <g fill="url(#cloudFill)" filter="url(#cloudBlur)" className="animate-cloud-drift">
+              <ellipse cx="60" cy="90" rx="55" ry="34" />
+              <ellipse cx="140" cy="75" rx="65" ry="38" />
+              <ellipse cx="225" cy="95" rx="70" ry="40" />
+              <ellipse cx="310" cy="78" rx="60" ry="36" />
+              <ellipse cx="370" cy="100" rx="55" ry="34" />
+              <ellipse cx="100" cy="125" rx="60" ry="32" />
+              <ellipse cx="200" cy="130" rx="65" ry="34" />
+              <ellipse cx="290" cy="125" rx="60" ry="32" />
             </g>
           </svg>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
