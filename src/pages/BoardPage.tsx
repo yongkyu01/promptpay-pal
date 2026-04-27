@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText, HelpCircle } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Headphones, FileText, HelpCircle, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 type Lang = "th" | "en" | "ko" | "ja";
@@ -51,6 +51,7 @@ const LABELS = {
   notice: { th: "ประกาศ", en: "Notices", ko: "공지사항", ja: "お知らせ" },
   support: { th: "ศูนย์ช่วยเหลือ", en: "Help Center", ko: "고객센터", ja: "カスタマーセンター" },
   terms: { th: "ข้อกำหนดและนโยบาย", en: "Terms & Policies", ko: "약관 및 정책", ja: "規約・ポリシー" },
+  faq: { th: "คำถามที่พบบ่อย", en: "FAQ", ko: "자주 묻는 질문", ja: "よくある質問" },
   back: { th: "กลับ", en: "Back", ko: "뒤로", ja: "戻る" },
   empty: { th: "ยังไม่มีโพสต์", en: "No posts yet", ko: "게시글이 없어요", ja: "まだ投稿がありません" },
   newPost: { th: "เขียนใหม่", en: "New Post", ko: "새 글", ja: "新規作成" },
@@ -68,10 +69,16 @@ const LABELS = {
     ko: "운영팀에 직접 문의를 남겨보세요",
     ja: "運営チームに直接お問い合わせください",
   },
+  faqDesc: {
+    th: "ดูคำตอบสำหรับคำถามที่พบบ่อย",
+    en: "Browse answers to frequently asked questions",
+    ko: "자주 묻는 질문과 답변을 확인하세요",
+    ja: "よくある質問と回答を確認できます",
+  },
 } as const;
 
 export default function BoardPage() {
-  const { board } = useParams<{ board: "notice" | "support" | "terms" }>();
+  const { board } = useParams<{ board: "notice" | "support" | "terms" | "faq" }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { lang } = useApp();
@@ -86,11 +93,19 @@ export default function BoardPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const boardKey = (board === "support" || board === "terms" ? board : "notice") as
+  const boardKey = (board === "support" || board === "terms" || board === "faq" ? board : "notice") as
     | "notice"
     | "support"
-    | "terms";
-  const Icon = boardKey === "notice" ? Megaphone : boardKey === "support" ? Headphones : FileText;
+    | "terms"
+    | "faq";
+  const Icon =
+    boardKey === "notice"
+      ? Megaphone
+      : boardKey === "support"
+      ? Headphones
+      : boardKey === "faq"
+      ? BookOpen
+      : FileText;
 
   const load = async () => {
     setLoading(true);
@@ -177,7 +192,7 @@ export default function BoardPage() {
         </button>
         <Icon className="h-5 w-5 text-primary" />
         <h1 className="text-lg font-bold flex-1">{L(boardKey)}</h1>
-        {isAdmin && !composing && (
+        {isAdmin && !composing && boardKey !== "support" && (
           <button
             onClick={startNew}
             className="flex items-center gap-1 rounded-full gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-primary active:scale-95 transition-transform"
@@ -189,19 +204,34 @@ export default function BoardPage() {
       </div>
 
       {boardKey === "support" && !composing && !editing && (
-        <button
-          onClick={() => navigate("/inquiry")}
-          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <HelpCircle className="h-5 w-5 text-primary" />
-          </span>
-          <span className="flex-1">
-            <span className="block text-sm font-semibold text-foreground">{L("contact")}</span>
-            <span className="block text-xs text-muted-foreground">{L("contactDesc")}</span>
-          </span>
-          <span className="text-muted-foreground">›</span>
-        </button>
+        <div className="mb-4 space-y-2">
+          <button
+            onClick={() => navigate("/board/faq")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-foreground">{L("faq")}</span>
+              <span className="block text-xs text-muted-foreground">{L("faqDesc")}</span>
+            </span>
+            <span className="text-muted-foreground">›</span>
+          </button>
+          <button
+            onClick={() => navigate("/inquiry")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary transition-colors active:scale-[0.99]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <HelpCircle className="h-5 w-5 text-primary" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-foreground">{L("contact")}</span>
+              <span className="block text-xs text-muted-foreground">{L("contactDesc")}</span>
+            </span>
+            <span className="text-muted-foreground">›</span>
+          </button>
+        </div>
       )}
 
       {composing && (
