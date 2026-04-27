@@ -329,19 +329,19 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
           {run && activeMember !== null && (() => {
             const mIdx = activeMember;
             const path = run.paths[mIdx];
-            const d = buildSvgPath(path);
-            const length = estimateLength(path);
+            const waypoints = buildWaypoints(path);
+            const d = waypointsToPath(waypoints);
+            const segments = waypointsToSegments(waypoints);
+            const totalLen = segments[segments.length - 1]?.cumEnd || 1;
             const color = TRACK_COLORS[mIdx % TRACK_COLORS.length];
             const traveler = TRAVELERS[mIdx % TRAVELERS.length];
-            const endX = path[path.length - 1] * COL_W + COL_W / 2;
-            const endY = TOP_PAD + (path.length - 1) * ROW_H;
-            // Unique key forces remount → restarts SMIL animation
-            const animKey = `anim-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
-            const pathId = `ladder-path-${mIdx}-${arrived[mIdx] ? "done" : "run"}`;
+            // Trail dash: reveal proportional to progress
+            const dashOffset = totalLen * (1 - progress);
+            // Traveler position: interpolate along waypoints by arc length
+            const target = totalLen * progress;
+            const pos = pointAt(segments, target);
             return (
-              <g key={animKey}>
-                {/* Hidden path used as motion reference */}
-                <path id={pathId} d={d} fill="none" stroke="none" />
+              <g>
                 {/* Trail being drawn */}
                 <path
                   d={d}
@@ -350,83 +350,22 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                   strokeWidth={4}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeDasharray={length}
-                  strokeDashoffset={length}
+                  strokeDasharray={totalLen}
+                  strokeDashoffset={dashOffset}
                   opacity={0.85}
-                >
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from={length}
-                    to={0}
-                    dur={`${PATH_REVEAL_MS}ms`}
-                    fill="freeze"
-                    calcMode="spline"
-                    keySplines="0.45 0 0.55 1"
-                    keyTimes="0;1"
-                  />
-                </path>
+                />
                 {/* Traveler emoji following the path */}
-                <g>
-                  <circle cx={0} cy={0} r={14} fill={color} opacity={0.25}>
-                    <animateMotion
-                      dur={`${PATH_REVEAL_MS}ms`}
-                      begin="0s"
-                      fill="freeze"
-                      rotate="0"
-                      calcMode="linear"
-                    >
-                      <mpath href={`#${pathId}`} />
-                    </animateMotion>
-                  </circle>
-                  <text
-                    x={0}
-                    y={0}
-                    fontSize={22}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }}
-                  >
-                    {traveler}
-                    <animateMotion
-                      dur={`${PATH_REVEAL_MS}ms`}
-                      begin="0s"
-                      fill="freeze"
-                      rotate="0"
-                      calcMode="linear"
-                    >
-                      <mpath href={`#${pathId}`} />
-                    </animateMotion>
-                  </text>
-                </g>
-                {/* Arrival burst at the destination */}
-                <g transform={`translate(${endX}, ${endY})`} opacity={0}>
-                  <circle r={4} fill={color}>
-                    <animate
-                      attributeName="r"
-                      from={4}
-                      to={26}
-                      dur="600ms"
-                      begin={`${PATH_REVEAL_MS - 50}ms`}
-                      fill="freeze"
-                    />
-                    <animate
-                      attributeName="opacity"
-                      from={0.7}
-                      to={0}
-                      dur="600ms"
-                      begin={`${PATH_REVEAL_MS - 50}ms`}
-                      fill="freeze"
-                    />
-                  </circle>
-                  <animate
-                    attributeName="opacity"
-                    from={0}
-                    to={1}
-                    dur="50ms"
-                    begin={`${PATH_REVEAL_MS - 50}ms`}
-                    fill="freeze"
-                  />
-                </g>
+                <circle cx={pos.x} cy={pos.y} r={14} fill={color} opacity={0.25} />
+                <text
+                  x={pos.x}
+                  y={pos.y}
+                  fontSize={22}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }}
+                >
+                  {traveler}
+                </text>
               </g>
             );
           })()}
