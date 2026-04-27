@@ -20,6 +20,7 @@ import DutchSplitPage from "@/pages/DutchSplitPage";
 import MyPage from "@/pages/MyPage";
 import BoardPage from "@/pages/BoardPage";
 import DeleteAccountPage from "@/pages/DeleteAccountPage";
+import InquiryPage from "@/pages/InquiryPage";
 import TermsConsentGate from "@/components/TermsConsentGate";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -56,6 +57,7 @@ function AppContent() {
         <Route path="/dutch/:id" element={<DutchSplitPage />} />
         <Route path="/me" element={<MyPage />} />
         <Route path="/board/:board" element={<BoardPage />} />
+        <Route path="/inquiry" element={<InquiryPage />} />
         <Route path="/me/delete" element={<DeleteAccountPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

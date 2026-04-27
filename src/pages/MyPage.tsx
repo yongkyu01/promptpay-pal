@@ -66,8 +66,6 @@ export default function MyPage() {
   } as const;
   const L = (k: keyof typeof supportLabels) => supportLabels[k][lang as "th" | "en" | "ko" | "ja"] ?? supportLabels[k].en;
 
-  const notImplemented = () => toast.info("Coming soon");
-
   const handleDeleteAccount = () => navigate("/me/delete");
 
   return (
@@ -172,7 +170,7 @@ export default function MyPage() {
           </span>
         </button>
         <button
-          onClick={notImplemented}
+          onClick={() => navigate("/inquiry")}
           className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
         >
           <span className="flex items-center gap-3">
