@@ -474,8 +474,9 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
             // After the game runs, find which member landed at this slot.
             const winnerIdx = run ? run.destinations.findIndex((d, mi) => d === i && arrived[mi]) : -1;
             const winner = winnerIdx >= 0 ? members[winnerIdx] : null;
+            const isLast = i === slots.length - 1 && slots.length >= 2;
             return (
-            <div key={`slot-${i}`} className="rounded-xl border border-border bg-background p-2">
+            <div key={`slot-${i}`} className={`rounded-xl border bg-background p-2 ${isLast ? "border-primary/40" : "border-border"}`}>
               <div className="mb-1 truncate text-center text-[10px] font-semibold text-muted-foreground">
                 {winner ? (
                   <>
@@ -494,6 +495,9 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                 className="h-7 px-2 text-center text-sm font-bold"
                 placeholder="0"
               />
+              {isLast && (
+                <div className="mt-0.5 text-center text-[9px] text-primary/70">자동</div>
+              )}
               <Input
                 type="text"
                 value={slot.label}
