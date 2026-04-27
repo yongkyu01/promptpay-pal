@@ -225,11 +225,11 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
                 key={`top-${member.id}`}
                 type="button"
                 onClick={() => playMember(index)}
-                className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${isActive ? "scale-105 shadow-primary" : ""}`}
+                className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-xs font-semibold transition-all ${isActive ? "scale-105 shadow-primary" : ""}`}
                 style={{ background: color, color: "white" }}
               >
-                <span className="mr-1">{TRAVELERS[index % TRAVELERS.length]}</span>
-                {member.name}
+                <span className="text-base leading-none">{TRAVELERS[index % TRAVELERS.length]}</span>
+                <span className="truncate leading-tight">{member.name}</span>
               </button>
             );
           })}
