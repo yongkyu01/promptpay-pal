@@ -52,6 +52,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
   const [run, setRun] = useState<LadderRun | null>(null);
   const [revealed, setRevealed] = useState<boolean[]>([]); // which member's path is fully drawn
   const [activeMember, setActiveMember] = useState<number | null>(null);
+  const [cloudsLifted, setCloudsLifted] = useState(false);
 
   const columnCount = members.length;
   const rowCount = Math.max(8, members.length * 2 + 4);
@@ -66,6 +67,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setRun(null);
     setRevealed([]);
     setActiveMember(null);
+    setCloudsLifted(false);
   }, [columnCount, rowCount]);
 
   // Auto-fill slots when member count changes
@@ -102,12 +104,14 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setRun(null);
     setRevealed([]);
     setActiveMember(null);
+    setCloudsLifted(false);
   };
 
   const startGame = () => {
     if (members.length < 2 || slots.length !== members.length) return;
     const r = rungs.length ? rungs : buildRungs(rowCount, columnCount);
     if (!rungs.length) setRungs(r);
+    setCloudsLifted(true);
     const paths = members.map((_, startIndex) => walk(r, startIndex, columnCount));
     const destinations = paths.map((p) => p[p.length - 1]);
     setRun({ paths, destinations });
@@ -142,6 +146,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
     setActiveMember(null);
     setSlots(buildPresetSlots(members.length, total, lang));
     setRungs(buildRungs(rowCount, columnCount));
+    setCloudsLifted(false);
   };
 
   const apply = () => {
@@ -220,6 +225,7 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
         </div>
 
         {/* Ladder SVG */}
+        <div className="relative mt-2">
         <svg
           className="mt-2 w-full"
           viewBox={`0 0 ${columnCount * COL_W} ${rowCount * ROW_H + TOP_PAD + BOTTOM_PAD}`}
@@ -286,6 +292,50 @@ export default function SettlementLadderGame({ lang, members, total = 0, onApply
               );
             })}
         </svg>
+
+        {/* Cloud cover overlay */}
+        <div
+          className={`pointer-events-none absolute inset-0 transition-all duration-700 ease-out ${
+            cloudsLifted ? "opacity-0 -translate-y-4 scale-110" : "opacity-100"
+          }`}
+          aria-hidden
+        >
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-card/95 via-card/85 to-card/95 backdrop-blur-md" />
+          <svg
+            className="absolute inset-0 h-full w-full"
+            viewBox="0 0 400 400"
+            preserveAspectRatio="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <radialGradient id="cloudFill" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="white" stopOpacity="1" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.7" />
+              </radialGradient>
+            </defs>
+            <g fill="url(#cloudFill)">
+              <ellipse cx="70" cy="60" rx="55" ry="32" />
+              <ellipse cx="140" cy="45" rx="60" ry="34" />
+              <ellipse cx="220" cy="65" rx="58" ry="30" />
+              <ellipse cx="310" cy="50" rx="62" ry="34" />
+              <ellipse cx="60" cy="160" rx="55" ry="30" />
+              <ellipse cx="180" cy="150" rx="70" ry="36" />
+              <ellipse cx="300" cy="170" rx="58" ry="32" />
+              <ellipse cx="90" cy="260" rx="60" ry="32" />
+              <ellipse cx="220" cy="270" rx="65" ry="34" />
+              <ellipse cx="330" cy="255" rx="55" ry="30" />
+              <ellipse cx="70" cy="350" rx="58" ry="30" />
+              <ellipse cx="180" cy="340" rx="62" ry="32" />
+              <ellipse cx="300" cy="355" rx="60" ry="30" />
+            </g>
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="rounded-full bg-background/80 px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
+              ☁️ {t("startLadder", lang)} ▶︎
+            </div>
+          </div>
+        </div>
+        </div>
 
         {/* Bottom: editable slots */}
         <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
