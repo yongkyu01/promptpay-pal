@@ -36,6 +36,11 @@ export const readStoredRelayState = (): string | null => {
   return relayId;
 };
 
+export const normalizeRelayId = (relayId: string | null | undefined): string | null => {
+  if (!relayId) return null;
+  return relayId.replace(/_(?:pwa|relay)$/i, "");
+};
+
 const isKnownExternalAndroidBrowser = (ua: string): boolean =>
   /SamsungBrowser\/|Chrome\/\d|CriOS\/|Firefox\/|FxiOS\/|EdgA?\/|OPR\/|Opera\//i.test(ua);
 
